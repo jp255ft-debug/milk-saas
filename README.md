@@ -1,48 +1,18 @@
-\# Milk SaaS
+﻿# Milk SaaS
 
+## Configuração do Ambiente
 
+### Backend
+1. Criar ambiente virtual: python -m venv venv
+2. Ativar: env\Scripts\activate (Windows) ou source venv/bin/activate (Linux/macOS)
+3. Instalar dependências: pip install -r requirements.txt
+4. Copiar .env.example para .env e ajustar as variáveis
+5. Iniciar: uvicorn app.main:app --reload
 
-Sistema de gestão para fazendas leiteiras com multi‑tenancy, desenvolvido com FastAPI (Python) e Next.js (React). Permite o cadastro de animais, registro de produção de leite, gestão financeira e dashboard com gráficos.
+### Frontend
+1. Instalar dependências: 
+pm install
+2. Iniciar: 
+pm run dev
 
-
-
-\## Tecnologias
-
-
-
-\- \*\*Backend\*\*: FastAPI, SQLAlchemy, PostgreSQL, JWT, Bcrypt
-
-\- \*\*Frontend\*\*: Next.js 16, React 19, Tailwind CSS, Recharts, Axios, React Hook Form
-
-\- \*\*Banco de Dados\*\*: PostgreSQL (container Docker)
-
-\- \*\*Infraestrutura\*\*: Docker (opcional), ambiente virtual Python
-
-
-
-\## Pré‑requisitos
-
-
-
-\- Python 3.13+
-
-\- Node.js 18+
-
-\- Docker (para o PostgreSQL)
-
-\- Git
-
-
-
-\## Configuração do Ambiente
-
-
-
-\### 1. Clone o repositório
-
-```bash
-
-git clone https://github.com/seu-usuario/milk-saas.git
-
-cd milk-saas
-
+Acesse http://localhost:3000
