@@ -1,16 +1,24 @@
-﻿from fastapi import FastAPI
+﻿from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-
+from app.database import engine, Base
 from app.api.endpoints import auth
-from app.api.routers import animals, finance, milk
-from app.database import Base, engine
+from app.api.routers import animals, milk, finance
+from app.api import deps
+import os
 
 app = FastAPI(title="Milk SaaS API")
 
 # Configuração CORS
+origins = [
+    "http://localhost:3000",
+    "https://frontend-72o2zf32t-joao-paulo-limas-projects.vercel.app",
+    "https://frontend-sandy-six-24.vercel.app",
+    # Adicione outras origens conforme necessário
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
