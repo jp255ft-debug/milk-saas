@@ -1,4 +1,4 @@
-﻿from datetime import date
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
@@ -21,7 +21,7 @@ class FinancialCategoryResponse(FinancialCategoryBase):
 class TransactionBase(BaseModel):
     category_id: UUID
     description: str | None = None
-    amount: Decimal = Field(..., gt=0, decimal_places=2)
+    amount: Decimal = Field(..., gt=0)
     transaction_date: date = Field(default_factory=date.today)
     is_paid: bool = True
 
@@ -31,7 +31,7 @@ class TransactionCreate(TransactionBase):
 class TransactionUpdate(BaseModel):
     category_id: UUID | None = None
     description: str | None = None
-    amount: Decimal | None = Field(None, gt=0, decimal_places=2)
+    amount: Decimal | None = Field(None, gt=0)
     transaction_date: date | None = None
     is_paid: bool | None = None
 
@@ -42,7 +42,7 @@ class TransactionResponse(TransactionBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-# ---------- Cálculos ----------
+# ---------- C�lculos ----------
 class CostPerLiterResponse(BaseModel):
     period_start: date
     period_end: date
