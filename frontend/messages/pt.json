@@ -1,0 +1,89 @@
+{
+  "Common": {
+    "loading": "Carregando...",
+    "back": "Voltar",
+    "save": "Salvar",
+    "update": "Atualizar",
+    "delete": "Excluir",
+    "confirmDelete": "Remover este registro?",
+    "actions": "Ações",
+    "dashboard": "Dashboard",
+    "quickAccess": "Acesso Rápido",
+    "animals": "Animais",
+    "milkProduction": "Produção de Leite",
+    "finance": "Financeiro"
+  },
+  "Animals": {
+    "title": "Animais",
+    "new": "Novo Animal",
+    "manage": "Gerenciar Animais",
+    "earring": "Brinco",
+    "name": "Nome",
+    "breed": "Raça",
+    "status": "Status",
+    "birthDate": "Data de nascimento",
+    "lastCalving": "Data do último parto",
+    "total": "Total de Animais",
+    "lactating": "Em Lactação",
+    "avgProduction": "Média por Animal",
+    "statusOptions": {
+      "lactation": "Lactação",
+      "dry": "Seca",
+      "heifer": "Novilha",
+      "calf": "Bezerra"
+    },
+    "noAnimals": "Nenhum animal cadastrado."
+  },
+  "Milk": {
+    "title": "Produção de Leite",
+    "new": "Nova Produção",
+    "filters": "Filtros",
+    "animal": "Animal",
+    "date": "Data",
+    "liters": "Litros",
+    "period": "Período",
+    "fat": "Gordura",
+    "protein": "Proteína",
+    "total": "Total de leite",
+    "perAnimal": "Produção por animal",
+    "downloadReport": "Baixar Relatório PDF",
+    "apply": "Aplicar",
+    "noRecords": "Nenhuma produção registrada.",
+    "dailyProduction": "Produção Diária (últimos 7 dias)",
+    "topAnimals": "Top 5 Animais (últimos 30 dias)",
+    "periodOptions": {
+      "morning": "manhã",
+      "afternoon": "tarde",
+      "night": "noite"
+    }
+  },
+  "Finance": {
+    "title": "Financeiro",
+    "new": "Nova Transação",
+    "revenues": "Receitas",
+    "expenses": "Despesas",
+    "balance": "Saldo",
+    "category": "Categoria",
+    "description": "Descrição",
+    "amount": "Valor",
+    "paid": "Pago",
+    "yes": "Sim",
+    "no": "Não",
+    "filters": "Filtros",
+    "downloadReport": "Baixar Relatório PDF",
+    "allTypes": "Todos os tipos",
+    "expense": "Despesas",
+    "revenue": "Receitas",
+    "noTransactions": "Nenhuma transação registrada.",
+    "costPerLiter": "Calcular Custo por Litro"
+  },
+  "Auth": {
+    "login": "Entrar",
+    "register": "Registrar",
+    "email": "E-mail",
+    "password": "Senha",
+    "farmName": "Nome da Fazenda",
+    "ownerName": "Nome do Proprietário",
+    "logout": "Sair"
+  }
+}
