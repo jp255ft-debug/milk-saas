@@ -1,4 +1,4 @@
-﻿from datetime import date, datetime
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -47,10 +47,10 @@ class Animal(AnimalBase):
 # ---------- MilkProduction ----------
 class MilkProductionBase(BaseModel):
     production_date: date | None = Field(default_factory=date.today)
-    liters_produced: Decimal = Field(..., gt=0, decimal_places=2)
+    liters_produced: Decimal = Field(..., gt=0)
     period: str | None = Field(None, pattern='^(morning|afternoon|night)$')
-    fat_content: Decimal | None = Field(0, ge=0, le=100, decimal_places=2)
-    protein_content: Decimal | None = Field(0, ge=0, le=100, decimal_places=2)
+    fat_content: Decimal | None = Field(0, ge=0, le=100)
+    protein_content: Decimal | None = Field(0, ge=0, le=100)
 
 class MilkProductionCreate(MilkProductionBase):
     animal_id: UUID
@@ -75,7 +75,7 @@ class FinancialCategory(FinancialCategoryBase):
 # ---------- Transaction ----------
 class TransactionBase(BaseModel):
     description: str | None = None
-    amount: Decimal = Field(..., gt=0, decimal_places=2)
+    amount: Decimal = Field(..., gt=0)
     transaction_date: date | None = Field(default_factory=date.today)
     is_paid: bool = True
 
