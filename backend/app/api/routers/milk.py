@@ -135,6 +135,8 @@ def get_dashboard_data(
             current += timedelta(days=1)
         
         last_30_days_start = end_date - timedelta(days=29)
+        
+        # Produção por animal nos últimos 30 dias (para o top 5)
         per_animal = db.query(
             models.Animal.id,
             models.Animal.name,
@@ -145,10 +147,21 @@ def get_dashboard_data(
             models.MilkProduction.production_date >= last_30_days_start
         ).group_by(models.Animal.id).order_by(func.sum(models.MilkProduction.liters_produced).desc()).limit(5).all()
         
-        avg_production = db.query(func.avg(models.MilkProduction.liters_produced)).join(models.Animal).filter(
+        # Cálculo correto da média por animal (média das médias individuais)
+        animal_production = db.query(
+            models.Animal.id,
+            func.sum(models.MilkProduction.liters_produced).label('total'),
+            func.count(models.MilkProduction.id).label('days')
+        ).join(models.MilkProduction).filter(
             models.Animal.farm_id == current_farm.id,
             models.MilkProduction.production_date >= last_30_days_start
-        ).scalar() or 0
+        ).group_by(models.Animal.id).all()
+
+        if animal_production:
+            soma_medias = sum(item.total / item.days for item in animal_production)
+            avg_production = soma_medias / len(animal_production)
+        else:
+            avg_production = 0.0
         
         return {
             "total_animals": total_animals,
@@ -167,7 +180,7 @@ def get_dashboard_data(
         import traceback
         print("ERRO NO DASHBOARD:")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e)) from e  # ← corrigido
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 # ========== ROTAS ESPECÍFICAS (antes das dinâmicas) ==========
 @router.get("/report")
