@@ -53,8 +53,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Restaura token do localStorage ao carregar a página
   useEffect(() => {
-    fetchUser();
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      fetchUser();
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -63,9 +70,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     formData.append('username', email);
     formData.append('password', password);
     try {
-      await api.post('/auth/token', formData, {
+      const response = await api.post('/auth/token', formData, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
+      const { access_token } = response.data;
+      // Salva token e configura no axios
+      localStorage.setItem('access_token', access_token);
+      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       await fetchUser();
       router.push('/dashboard');
     } catch (err: any) {
@@ -89,6 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('Erro no logout', err);
     } finally {
+      localStorage.removeItem('access_token');
+      delete api.defaults.headers.common['Authorization'];
       setUser(null);
       router.push('/login');
     }
