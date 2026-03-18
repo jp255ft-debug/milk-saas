@@ -2,10 +2,10 @@
 
 export default createMiddleware({
   locales: ['pt', 'en'],
-  defaultLocale: 'pt'
+  defaultLocale: 'pt',
+  localePrefix: 'never'
 });
 
 export const config = {
   matcher: ['/((?!api|_next|.*\\..*).*)']
 };
-
