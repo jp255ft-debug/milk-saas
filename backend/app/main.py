@@ -8,12 +8,13 @@ import os
 
 app = FastAPI(title="Milk SaaS API")
 
-# Configuração CORS
+# ConfiguraÃ§Ã£o CORS
 origins = [
     "http://localhost:3000",
     "https://frontend-72o2zf32t-joao-paulo-limas-projects.vercel.app",
     "https://frontend-sandy-six-24.vercel.app",
-    # Adicione outras origens conforme necessário
+    "https://frontend-mu-eight-30.vercel.app",
+    "https://frontend-chy9q7t0u-joao-paulo-limas-projects.vercel.app",
 ]
 
 app.add_middleware(
@@ -25,9 +26,9 @@ app.add_middleware(
 )
 
 # Incluir roteadores
-app.include_router(auth.router, prefix="/auth", tags=["autenticação"])
+app.include_router(auth.router, prefix="/auth", tags=["autenticaÃ§Ã£o"])
 app.include_router(animals.router, prefix="/animals", tags=["animais"])
-app.include_router(milk.router, prefix="/milk", tags=["produção de leite"])
+app.include_router(milk.router, prefix="/milk", tags=["produÃ§Ã£o de leite"])
 app.include_router(finance.router, prefix="/finance", tags=["financeiro"])
 
 @app.get("/")
