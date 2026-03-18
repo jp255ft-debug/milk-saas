@@ -151,7 +151,7 @@ def get_dashboard_data(
         animal_production = db.query(
             models.Animal.id,
             func.sum(models.MilkProduction.liters_produced).label('total'),
-            func.count(models.MilkProduction.id).label('days')
+            func.count(func.distinct(models.MilkProduction.production_date)).label('days')
         ).join(models.MilkProduction).filter(
             models.Animal.farm_id == current_farm.id,
             models.MilkProduction.production_date >= last_30_days_start
