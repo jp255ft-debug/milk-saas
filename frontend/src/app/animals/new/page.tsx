@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import api from '@/lib/api';
+import api, { extractErrorMessage } from '@/lib/api';
 
 export default function NewAnimalPage() {
   const { user, isLoading } = useAuth();
@@ -14,7 +14,7 @@ export default function NewAnimalPage() {
     name: '',
     breed: '',
     birth_date: '',
-    status: 'cow', // lactação
+    status: 'lactation', // valor padrão alterado para 'lactation'
     last_calving_date: '',
   });
   const [error, setError] = useState('');
@@ -32,35 +32,21 @@ export default function NewAnimalPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    // Prepara os dados para envio: converte strings vazias em null
+    // Converte strings vazias para null
     const payload = {
       ...formData,
       birth_date: formData.birth_date || null,
       last_calving_date: formData.last_calving_date || null,
     };
-
     try {
       await api.post('/animals/', payload);
       router.push('/animals');
     } catch (err: any) {
-      // Tratamento detalhado de erros de validação
-      const responseData = err.response?.data;
-      if (responseData?.detail) {
-        if (Array.isArray(responseData.detail)) {
-          // Erros de validação do Pydantic (lista de objetos)
-          const messages = responseData.detail.map((e: any) => {
-            if (e.loc && e.msg) {
-              return `${e.loc.join('.')}: ${e.msg}`;
-            }
-            return JSON.stringify(e);
-          });
-          setError(messages.join('; '));
-        } else if (typeof responseData.detail === 'string') {
-          setError(responseData.detail);
-        } else {
-          setError(JSON.stringify(responseData.detail));
-        }
+      const errorDetail = err.response?.data?.detail;
+      if (typeof errorDetail === 'string') {
+        setError(errorDetail);
+      } else if (Array.isArray(errorDetail)) {
+        setError(errorDetail.map((e: any) => e.msg).join('; '));
       } else {
         setError('Erro ao cadastrar animal');
       }
@@ -73,11 +59,7 @@ export default function NewAnimalPage() {
       <Link href="/animals" className="text-blue-600 hover:underline block mb-4">
         ← Voltar
       </Link>
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          <pre className="whitespace-pre-wrap font-sans text-sm">{error}</pre>
-        </div>
-      )}
+      {error && <p className="text-red-500 mb-4">{error}</p>}
       <form onSubmit={handleSubmit} className="max-w-lg bg-white p-6 rounded shadow">
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">Brinco *</label>
@@ -129,7 +111,7 @@ export default function NewAnimalPage() {
             required
             className="w-full border rounded px-3 py-2"
           >
-            <option value="cow">Lactação</option>
+            <option value="lactation">Lactação</option>
             <option value="dry">Seca</option>
             <option value="heifer">Novilha</option>
             <option value="calf">Bezerra</option>
