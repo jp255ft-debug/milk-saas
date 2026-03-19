@@ -11,23 +11,59 @@ from app.schemas import finance as finance_schema
 
 router = APIRouter(tags=["financeiro"])
 
+
+# ========== CATEGORIAS ==========
 @router.get("/categories", response_model=list[finance_schema.FinancialCategoryResponse])
 def get_categories(
     db: Session = Depends(deps.get_db),
     current_farm: models.Farm = Depends(deps.get_current_farm)
 ):
-    categories = db.query(models.FinancialCategory).all()
+    """Retorna todas as categorias da fazenda atual."""
+    categories = db.query(models.FinancialCategory).filter(
+        models.FinancialCategory.farm_id == current_farm.id
+    ).all()
     return categories
 
+
+@router.post("/categories", response_model=finance_schema.FinancialCategoryResponse, status_code=status.HTTP_201_CREATED)
+def create_category(
+    category_in: finance_schema.FinancialCategoryCreate,
+    db: Session = Depends(deps.get_db),
+    current_farm: models.Farm = Depends(deps.get_current_farm)
+):
+    """Cria uma nova categoria financeira."""
+    # Verifica se já existe categoria com mesmo nome para esta fazenda
+    existing = db.query(models.FinancialCategory).filter(
+        models.FinancialCategory.farm_id == current_farm.id,
+        models.FinancialCategory.name == category_in.name
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Categoria já existe")
+    
+    category = models.FinancialCategory(
+        farm_id=current_farm.id,
+        name=category_in.name,
+        type=category_in.type
+    )
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+    return category
+
+
+# ========== TRANSAÇÕES ==========
 @router.post("/transactions", response_model=finance_schema.TransactionResponse)
 def create_transaction(
     trans_in: finance_schema.TransactionCreate,
     db: Session = Depends(deps.get_db),
     current_farm: models.Farm = Depends(deps.get_current_farm)
 ):
-    category = db.query(models.FinancialCategory).filter(models.FinancialCategory.id == trans_in.category_id).first()
+    category = db.query(models.FinancialCategory).filter(
+        models.FinancialCategory.id == trans_in.category_id,
+        models.FinancialCategory.farm_id == current_farm.id
+    ).first()
     if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(status_code=404, detail="Categoria não encontrada")
     
     transaction = models.Transaction(
         farm_id=current_farm.id,
@@ -41,6 +77,7 @@ def create_transaction(
     db.commit()
     db.refresh(transaction)
     return transaction
+
 
 @router.get("/transactions", response_model=list[finance_schema.TransactionResponse])
 def get_transactions(
@@ -65,6 +102,7 @@ def get_transactions(
     transactions = query.order_by(models.Transaction.transaction_date.desc()).offset(skip).limit(limit).all()
     return transactions
 
+
 @router.get("/transactions/{transaction_id}", response_model=finance_schema.TransactionResponse)
 def get_transaction(
     transaction_id: str,
@@ -76,8 +114,9 @@ def get_transaction(
         models.Transaction.farm_id == current_farm.id
     ).first()
     if not transaction:
-        raise HTTPException(status_code=404, detail="Transaction not found")
+        raise HTTPException(status_code=404, detail="Transação não encontrada")
     return transaction
+
 
 @router.put("/transactions/{transaction_id}", response_model=finance_schema.TransactionResponse)
 def update_transaction(
@@ -91,7 +130,7 @@ def update_transaction(
         models.Transaction.farm_id == current_farm.id
     ).first()
     if not transaction:
-        raise HTTPException(status_code=404, detail="Transaction not found")
+        raise HTTPException(status_code=404, detail="Transação não encontrada")
     
     update_data = trans_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -100,6 +139,7 @@ def update_transaction(
     db.commit()
     db.refresh(transaction)
     return transaction
+
 
 @router.delete("/transactions/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_transaction(
@@ -112,11 +152,13 @@ def delete_transaction(
         models.Transaction.farm_id == current_farm.id
     ).first()
     if not transaction:
-        raise HTTPException(status_code=404, detail="Transaction not found")
+        raise HTTPException(status_code=404, detail="Transação não encontrada")
     db.delete(transaction)
     db.commit()
     return None
 
+
+# ========== CUSTO POR LITRO ==========
 @router.get("/cost-per-liter", response_model=finance_schema.CostPerLiterResponse)
 def get_cost_per_liter(
     start_date: date = Query(...),
@@ -159,6 +201,8 @@ def get_cost_per_liter(
         "details": details
     }
 
+
+# ========== RESUMO MENSAL ==========
 @router.get("/summary")
 def get_financial_summary(
     year: int = Query(date.today().year),
@@ -194,6 +238,7 @@ def get_financial_summary(
     }
 
 
+# ========== RELATÓRIO PDF ==========
 @router.get("/report")
 def get_financial_report(
     start_date: date = Query(...),
