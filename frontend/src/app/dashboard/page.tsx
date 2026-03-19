@@ -132,18 +132,35 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
 
+        {/* Top 5 Animais - com fallback para lista no celular */}
         <div className="bg-white p-4 rounded shadow">
           <h2 className="text-lg sm:text-xl font-semibold mb-4">{t('Milk.topAnimals')}</h2>
-          <ResponsiveContainer width="100%" height={chartHeight}>
-            <BarChart data={data.top_5_animals} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="total" fill="#10b981" name={t('Milk.liters')} />
-            </BarChart>
-          </ResponsiveContainer>
+          
+          {/* Mobile: lista */}
+          <div className="block sm:hidden">
+            <ul className="divide-y divide-gray-200">
+              {data.top_5_animals.map((animal, index) => (
+                <li key={animal.id} className="py-2 flex justify-between">
+                  <span className="font-medium">{index + 1}. {animal.name}</span>
+                  <span className="text-green-600 font-bold">{animal.total.toFixed(2)} L</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Desktop: gráfico */}
+          <div className="hidden sm:block">
+            <ResponsiveContainer width="100%" height={chartHeight}>
+              <BarChart data={data.top_5_animals} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="total" fill="#10b981" name={t('Milk.liters')} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
