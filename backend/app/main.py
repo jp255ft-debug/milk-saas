@@ -38,4 +38,18 @@ def root():
 # Cria as tabelas no banco (apenas para desenvolvimento)
 @app.on_event("startup")
 def startup():
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)from fastapi import Request
+from fastapi.responses import JSONResponse
+import traceback
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_detail = {
+        "error": str(exc),
+        "traceback": traceback.format_exc()
+    }
+    print("ERRO GLOBAL:", error_detail)
+    return JSONResponse(
+        status_code=500,
+        content=error_detail
+    )
