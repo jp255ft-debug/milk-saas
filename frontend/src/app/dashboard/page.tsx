@@ -48,19 +48,30 @@ export default function DashboardPage() {
     }
   };
 
+  // Altura responsiva dos gráficos
+  const [chartHeight, setChartHeight] = useState(300);
+  useEffect(() => {
+    const handleResize = () => {
+      setChartHeight(window.innerWidth < 640 ? 200 : 300);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   if (isLoading || loading) {
-    return <div className="p-6">{t('Common.loading')}</div>;
+    return <div className="p-4 sm:p-6">{t('Common.loading')}</div>;
   }
 
   if (!user) return null;
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <p className="text-red-500">{error}</p>
         <button
           onClick={fetchDashboardData}
-          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full sm:w-auto"
         >
           {t('Common.tryAgain') || 'Tentar novamente'}
         </button>
@@ -76,73 +87,77 @@ export default function DashboardPage() {
   }));
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">{t('Common.dashboard')}</h1>
+    <div className="p-4 sm:p-6">
+      {/* Cabeçalho responsivo */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold">{t('Common.dashboard')}</h1>
         <button
           onClick={logout}
-          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-full sm:w-auto"
         >
           {t('Auth.logout')}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      {/* Cards KPI */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <div className="bg-blue-100 p-4 rounded shadow">
-          <h3 className="text-lg font-semibold">{t('Animals.total')}</h3>
-          <p className="text-3xl font-bold">{data.total_animals}</p>
+          <h3 className="text-sm sm:text-base font-semibold">{t('Animals.total')}</h3>
+          <p className="text-2xl sm:text-3xl font-bold">{data.total_animals}</p>
         </div>
         <div className="bg-green-100 p-4 rounded shadow">
-          <h3 className="text-lg font-semibold">{t('Animals.lactating')}</h3>
-          <p className="text-3xl font-bold">{data.lactating_animals}</p>
+          <h3 className="text-sm sm:text-base font-semibold">{t('Animals.lactating')}</h3>
+          <p className="text-2xl sm:text-3xl font-bold">{data.lactating_animals}</p>
         </div>
-        <div className="bg-yellow-100 p-4 rounded shadow">
-          <h3 className="text-lg font-semibold">{t('Animals.avgProduction')}</h3>
-          <p className="text-3xl font-bold">{data.avg_production_per_animal.toFixed(2)} L</p>
-          <p className="text-sm">(últimos 30 dias)</p>
+        <div className="bg-yellow-100 p-4 rounded shadow sm:col-span-2 lg:col-span-1">
+          <h3 className="text-sm sm:text-base font-semibold">{t('Animals.avgProduction')}</h3>
+          <p className="text-2xl sm:text-3xl font-bold">{data.avg_production_per_animal.toFixed(2)} L</p>
+          <p className="text-xs sm:text-sm">(últimos 30 dias)</p>
         </div>
       </div>
 
+      {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-xl font-semibold mb-4">{t('Milk.dailyProduction')}</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData}>
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">{t('Milk.dailyProduction')}</h2>
+          <ResponsiveContainer width="100%" height={chartHeight}>
+            <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
-              <Legend />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
               <Line type="monotone" dataKey="total" stroke="#3b82f6" name={t('Milk.liters')} />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
         <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-xl font-semibold mb-4">{t('Milk.topAnimals')}</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.top_5_animals}>
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">{t('Milk.topAnimals')}</h2>
+          <ResponsiveContainer width="100%" height={chartHeight}>
+            <BarChart data={data.top_5_animals} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
-              <Legend />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="total" fill="#10b981" name={t('Milk.liters')} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
+      {/* Acesso rápido */}
       <div className="bg-white p-4 rounded shadow">
-        <h2 className="text-xl font-semibold mb-4">{t('Common.quickAccess')}</h2>
-        <div className="flex flex-wrap gap-4">
-          <Link href="/animals" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        <h2 className="text-lg sm:text-xl font-semibold mb-4">{t('Common.quickAccess')}</h2>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/animals" className="flex-1 min-w-[120px] text-center bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700">
             {t('Animals.manage')}
           </Link>
-          <Link href="/milk" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+          <Link href="/milk" className="flex-1 min-w-[120px] text-center bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700">
             {t('Common.milkProduction')}
           </Link>
-          <Link href="/finance" className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+          <Link href="/finance" className="flex-1 min-w-[120px] text-center bg-purple-600 text-white px-3 py-2 rounded text-sm hover:bg-purple-700">
             {t('Common.finance')}
           </Link>
         </div>

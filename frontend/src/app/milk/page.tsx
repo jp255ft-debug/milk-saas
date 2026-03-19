@@ -140,68 +140,69 @@ export default function MilkPage() {
     }
   };
 
-  // Mapeamento para tradução dos períodos
   const periodoTexto: Record<string, string> = {
     morning: 'manhã',
     afternoon: 'tarde',
     night: 'noite',
   };
 
-  if (isLoading || loading) return <p className="p-6">Carregando...</p>;
+  if (isLoading || loading) return <p className="p-4 sm:p-6">Carregando...</p>;
   if (!user) return null;
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold">Produção de Leite</h1>
-          <Link href="/dashboard" className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
+    <div className="p-4 sm:p-6">
+      {/* Cabeçalho responsivo */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <h1 className="text-xl sm:text-2xl font-bold">Produção de Leite</h1>
+          <Link href="/dashboard" className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm">
             Dashboard
           </Link>
         </div>
-        <Link href="/milk/new" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        <Link href="/milk/new" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm w-full sm:w-auto text-center">
           Nova Produção
         </Link>
       </div>
 
       {/* Acesso Rápido */}
       <div className="bg-white p-4 rounded shadow mb-6">
-        <h2 className="text-xl font-semibold mb-4">Acesso Rápido</h2>
-        <div className="flex flex-wrap gap-4">
-          <Link href="/animals" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        <h2 className="text-lg sm:text-xl font-semibold mb-4">Acesso Rápido</h2>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/animals" className="flex-1 min-w-[120px] text-center bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700">
             Gerenciar Animais
           </Link>
-          <Link href="/milk" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+          <Link href="/milk" className="flex-1 min-w-[120px] text-center bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700">
             Produção de Leite
           </Link>
-          <Link href="/finance" className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+          <Link href="/finance" className="flex-1 min-w-[120px] text-center bg-purple-600 text-white px-3 py-2 rounded text-sm hover:bg-purple-700">
             Financeiro
           </Link>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm">
           {error}
         </div>
       )}
 
+      {/* Filtros */}
       <div className="mt-6 bg-gray-100 p-4 rounded">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-xl font-semibold">Filtros</h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+          <h2 className="text-lg sm:text-xl font-semibold">Filtros</h2>
           <button
             onClick={handleDownloadReport}
-            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 text-sm w-full sm:w-auto"
           >
             Baixar Relatório PDF
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <select
             name="animal_id"
             value={filters.animal_id}
             onChange={handleFilterChange}
-            className="border rounded px-3 py-2"
+            className="border rounded px-3 py-2 text-base"
           >
             <option value="">Todos os animais</option>
             {animals.map(a => (
@@ -213,7 +214,7 @@ export default function MilkPage() {
             name="start_date"
             value={filters.start_date}
             onChange={handleFilterChange}
-            className="border rounded px-3 py-2"
+            className="border rounded px-3 py-2 text-base"
             placeholder="Data inicial"
           />
           <input
@@ -221,28 +222,29 @@ export default function MilkPage() {
             name="end_date"
             value={filters.end_date}
             onChange={handleFilterChange}
-            className="border rounded px-3 py-2"
+            className="border rounded px-3 py-2 text-base"
             placeholder="Data final"
           />
           <button
             onClick={applyFilters}
-            className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+            className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm"
           >
             Aplicar
           </button>
         </div>
       </div>
 
+      {/* Resumo */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-blue-50 p-4 rounded">
           <h3 className="text-lg font-medium">Total de leite</h3>
-          <p className="text-3xl font-bold">{summary.total_liters.toFixed(2)} L</p>
+          <p className="text-2xl sm:text-3xl font-bold">{summary.total_liters.toFixed(2)} L</p>
         </div>
         <div className="bg-green-50 p-4 rounded">
           <h3 className="text-lg font-medium">Produção por animal</h3>
           <ul className="list-disc list-inside">
             {summary.per_animal.map((item) => (
-              <li key={item.animal_id}>
+              <li key={item.animal_id} className="text-sm">
                 {item.animal_name || item.tag_id}: {item.total.toFixed(2)} L
               </li>
             ))}
@@ -250,37 +252,25 @@ export default function MilkPage() {
         </div>
       </div>
 
+      {/* Registros */}
       <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-2">Registros</h2>
+        <h2 className="text-lg sm:text-xl font-semibold mb-2">Registros</h2>
         {productions.length === 0 ? (
           <p>Nenhuma produção registrada.</p>
         ) : (
-          <table className="min-w-full bg-white border">
-            <thead>
-              <tr>
-                <th className="border px-4 py-2">Data</th>
-                <th className="border px-4 py-2">Animal</th>
-                <th className="border px-4 py-2">Litros</th>
-                <th className="border px-4 py-2">Período</th>
-                <th className="border px-4 py-2">Gordura</th>
-                <th className="border px-4 py-2">Proteína</th>
-                <th className="border px-4 py-2">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* Versão mobile (cards) */}
+            <div className="block sm:hidden space-y-4">
               {productions.map(p => (
-                <tr key={p.id}>
-                  {/* CORREÇÃO: exibe a data diretamente no formato DD/MM/AAAA */}
-                  <td className="border px-4 py-2">
-                    {p.production_date.split('-').reverse().join('/')}
-                  </td>
-                  <td className="border px-4 py-2">{getAnimalName(p.animal_id)}</td>
-                  <td className="border px-4 py-2">{p.liters_produced}</td>
-                  <td className="border px-4 py-2">{periodoTexto[p.period] || p.period || '—'}</td>
-                  <td className="border px-4 py-2">{p.fat_content || '—'}</td>
-                  <td className="border px-4 py-2">{p.protein_content || '—'}</td>
-                  <td className="border px-4 py-2">
-                    <Link href={`/milk/${p.id}/edit`} className="text-blue-600 hover:underline mr-2">
+                <div key={p.id} className="bg-white p-4 rounded shadow border">
+                  <p><strong>Data:</strong> {p.production_date.split('-').reverse().join('/')}</p>
+                  <p><strong>Animal:</strong> {getAnimalName(p.animal_id)}</p>
+                  <p><strong>Litros:</strong> {p.liters_produced}</p>
+                  <p><strong>Período:</strong> {periodoTexto[p.period] || p.period || '—'}</p>
+                  <p><strong>Gordura:</strong> {p.fat_content || '—'}</p>
+                  <p><strong>Proteína:</strong> {p.protein_content || '—'}</p>
+                  <div className="flex justify-end gap-4 mt-2">
+                    <Link href={`/milk/${p.id}/edit`} className="text-blue-600 hover:underline">
                       Editar
                     </Link>
                     <button
@@ -298,11 +288,59 @@ export default function MilkPage() {
                     >
                       Excluir
                     </button>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            {/* Versão desktop (tabela) */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="min-w-full bg-white border">
+                <thead>
+                  <tr>
+                    <th className="border px-4 py-2">Data</th>
+                    <th className="border px-4 py-2">Animal</th>
+                    <th className="border px-4 py-2">Litros</th>
+                    <th className="border px-4 py-2">Período</th>
+                    <th className="border px-4 py-2">Gordura</th>
+                    <th className="border px-4 py-2">Proteína</th>
+                    <th className="border px-4 py-2">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {productions.map(p => (
+                    <tr key={p.id}>
+                      <td className="border px-4 py-2">{p.production_date.split('-').reverse().join('/')}</td>
+                      <td className="border px-4 py-2">{getAnimalName(p.animal_id)}</td>
+                      <td className="border px-4 py-2">{p.liters_produced}</td>
+                      <td className="border px-4 py-2">{periodoTexto[p.period] || p.period || '—'}</td>
+                      <td className="border px-4 py-2">{p.fat_content || '—'}</td>
+                      <td className="border px-4 py-2">{p.protein_content || '—'}</td>
+                      <td className="border px-4 py-2 whitespace-nowrap">
+                        <Link href={`/milk/${p.id}/edit`} className="text-blue-600 hover:underline mr-2">
+                          Editar
+                        </Link>
+                        <button
+                          onClick={async () => {
+                            if (confirm('Remover este registro?')) {
+                              try {
+                                await api.delete(`/milk/${p.id}`);
+                                fetchData();
+                              } catch (err) {
+                                alert(extractErrorMessage(err));
+                              }
+                        }}}
+                          className="text-red-600 hover:underline"
+                        >
+                          Excluir
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
