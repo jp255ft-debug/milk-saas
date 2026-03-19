@@ -1,12 +1,27 @@
-from fastapi import FastAPI, Depends
+﻿from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.database import engine, Base
 from app.api.endpoints import auth
 from app.api.routers import animals, milk, finance
 from app.api import deps
 import os
+import traceback
 
 app = FastAPI(title="Milk SaaS API")
+
+# Handler global de exceções (para debug)
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_detail = {
+        "error": str(exc),
+        "traceback": traceback.format_exc()
+    }
+    print("ERRO GLOBAL:", error_detail)
+    return JSONResponse(
+        status_code=500,
+        content=error_detail
+    )
 
 # Configuração CORS
 origins = [
@@ -15,6 +30,7 @@ origins = [
     "https://frontend-sandy-six-24.vercel.app",
     "https://frontend-mu-eight-30.vercel.app",
     "https://frontend-chy9q7t0u-joao-paulo-limas-projects.vercel.app",
+    "https://frontend-l6mksi77k-joao-paulo-limas-projects.vercel.app",
 ]
 
 app.add_middleware(
@@ -38,18 +54,4 @@ def root():
 # Cria as tabelas no banco (apenas para desenvolvimento)
 @app.on_event("startup")
 def startup():
-    Base.metadata.create_all(bind=engine)from fastapi import Request
-from fastapi.responses import JSONResponse
-import traceback
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    error_detail = {
-        "error": str(exc),
-        "traceback": traceback.format_exc()
-    }
-    print("ERRO GLOBAL:", error_detail)
-    return JSONResponse(
-        status_code=500,
-        content=error_detail
-    )
+    Base.metadata.create_all(bind=engine)
