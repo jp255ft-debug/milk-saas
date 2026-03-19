@@ -270,7 +270,10 @@ export default function MilkPage() {
             <tbody>
               {productions.map(p => (
                 <tr key={p.id}>
-                  <td className="border px-4 py-2">{new Date(p.production_date).toLocaleDateString()}</td>
+                  {/* CORREÇÃO: exibe a data diretamente no formato DD/MM/AAAA */}
+                  <td className="border px-4 py-2">
+                    {p.production_date.split('-').reverse().join('/')}
+                  </td>
                   <td className="border px-4 py-2">{getAnimalName(p.animal_id)}</td>
                   <td className="border px-4 py-2">{p.liters_produced}</td>
                   <td className="border px-4 py-2">{periodoTexto[p.period] || p.period || '—'}</td>
