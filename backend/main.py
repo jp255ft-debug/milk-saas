@@ -4,18 +4,19 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-# CORS ñ permitir chamadas do frontend
+# CORS ‚Äì permitir chamadas do frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://frontend-mu-eight-30.vercel.app",
         "http://localhost:3000"
     ],
+    allow_credentials=True,          # ‚Üê linha adicionada
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Modelo para requisiÁ„o de login
+# Modelo para requisi√ß√£o de login
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -30,7 +31,7 @@ async def login(login_data: LoginRequest):
         "user": {
             "id": 1,
             "email": login_data.email,
-            "name": "Usu·rio Teste"
+            "name": "Usu√°rio Teste"
         }
     }
 
@@ -58,5 +59,5 @@ def root():
 def get_animals():
     return [
         {"id": "1", "tag_id": "001", "name": "Mimosa", "breed": "Girolando", "status": "lactation"},
-        {"id": "2", "tag_id": "002", "name": "Estrela", "breed": "HolandÍs", "status": "dry"},
+        {"id": "2", "tag_id": "002", "name": "Estrela", "breed": "Holand√™s", "status": "dry"},
     ]
