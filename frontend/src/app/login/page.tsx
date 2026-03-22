@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -54,7 +54,7 @@ export default function LoginPage() {
           </button>
         </form>
         <p className="text-center text-sm mt-4">
-          Não tem uma conta?{' '}
+          N�o tem uma conta?{' '}
           <Link href="/register" className="text-blue-600 hover:underline">
             Registre-se
           </Link>

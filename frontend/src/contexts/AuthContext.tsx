@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import api, { extractErrorMessage } from '@/lib/api';
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Restaura token do localStorage ao carregar a página
+  // Restaura token do localStorage ao carregar a p�gina
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     if (token) {
@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     formData.append('username', email);
     formData.append('password', password);
     try {
-      const response = await api.post('/auth/token', formData, {
+      const response = await api.post('/auth/login', formData, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
       const { access_token } = response.data;
