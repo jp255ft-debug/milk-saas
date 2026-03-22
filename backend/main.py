@@ -11,7 +11,7 @@ app.add_middleware(
         "https://frontend-mu-eight-30.vercel.app",
         "http://localhost:3000"
     ],
-    allow_credentials=True,          # ← linha adicionada
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -31,23 +31,38 @@ async def login(login_data: LoginRequest):
         "user": {
             "id": 1,
             "email": login_data.email,
-            "name": "Usuário Teste"
+            "farm_name": "Fazenda Teste",
+            "owner_name": "Usuário Teste"
         }
     }
 
-# Rota de registro (mock)
+# Modelo para requisição de registro
 class RegisterRequest(BaseModel):
     email: str
     password: str
-    name: str
+    farm_name: str
+    owner_name: str
 
+# Rota de registro (mock)
 @app.post("/auth/register")
 async def register(register_data: RegisterRequest):
     # Aceita qualquer cadastro para teste
     return {
         "id": 2,
         "email": register_data.email,
-        "name": register_data.name
+        "farm_name": register_data.farm_name,
+        "owner_name": register_data.owner_name
+    }
+
+# Rota para obter dados do usuário autenticado (mock)
+@app.get("/auth/me")
+async def get_me():
+    # Retorna um usuário mockado com os campos esperados pelo frontend
+    return {
+        "id": 1,
+        "email": "usuario@teste.com",
+        "farm_name": "Fazenda Teste",
+        "owner_name": "Usuário Teste"
     }
 
 # Suas rotas existentes
