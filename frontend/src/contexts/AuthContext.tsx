@@ -66,15 +66,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     validatePasswordLength(password);
-    const formData = new URLSearchParams();
-    formData.append('username', email);
-    formData.append('password', password);
     try {
-      const response = await api.post('/auth/login', formData, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      const response = await api.post('/auth/login', { email, password }, {
+        headers: { 'Content-Type': 'application/json' }
       });
       const { access_token } = response.data;
-      // Salva token e configura no axios
       localStorage.setItem('access_token', access_token);
       api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       await fetchUser();
