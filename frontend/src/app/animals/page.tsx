@@ -94,7 +94,7 @@ export default function AnimalsPage() {
         <p className="text-sm">{t('Animals.noAnimals')}</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {animals.map(animal => {
+          {(animals || []).map(animal => {
          const statusKey = `Animals.statusOptions.${animal.status}`;
             const translatedStatus = t(statusKey) !== statusKey ? t(statusKey) : animal.status;
 
@@ -126,3 +126,5 @@ export default function AnimalsPage() {
     </div>
   );
 }
+
+
