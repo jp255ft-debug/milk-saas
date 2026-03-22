@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import api, { extractErrorMessage } from '@/lib/api';
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Restaura token do localStorage ao carregar a p�gina
+  // Restaura token do localStorage ao carregar a página
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     if (token) {
