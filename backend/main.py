@@ -1,10 +1,10 @@
-ï»¿from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 app = FastAPI()
 
-# CORS â€“ permitir chamadas do frontend
+# CORS – permitir chamadas do frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -15,7 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Modelo para requisiÃ§Ã£o de login
+# Modelo para requisição de login
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -30,7 +30,7 @@ async def login(login_data: LoginRequest):
         "user": {
             "id": 1,
             "email": login_data.email,
-            "name": "UsuÃ¡rio Teste"
+            "name": "Usuário Teste"
         }
     }
 
@@ -58,5 +58,5 @@ def root():
 def get_animals():
     return [
         {"id": "1", "tag_id": "001", "name": "Mimosa", "breed": "Girolando", "status": "lactation"},
-        {"id": "2", "tag_id": "002", "name": "Estrela", "breed": "HolandÃªs", "status": "dry"},
+        {"id": "2", "tag_id": "002", "name": "Estrela", "breed": "Holandês", "status": "dry"},
     ]
