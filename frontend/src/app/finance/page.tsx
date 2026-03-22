@@ -260,7 +260,7 @@ export default function FinancePage() {
         <>
           {/* Versão mobile (cards) */}
           <div className="block sm:hidden space-y-4">
-            {transactions.map(t => {
+            {(transactions || []).map(t => {
               const catType = t.category?.type;
               return (
                 <div key={t.id} className="bg-white p-4 rounded shadow border">
@@ -308,7 +308,7 @@ export default function FinancePage() {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map(t => (
+                {(transactions || []).map(t => (
                   <tr key={t.id}>
                     <td className="border px-4 py-2">{t.transaction_date.split("-").reverse().join("/")}</td>
                     <td className="border px-4 py-2">{getCategoryName(t.category_id)}</td>
@@ -354,3 +354,4 @@ export default function FinancePage() {
     </div>
   );
 }
+

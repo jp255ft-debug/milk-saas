@@ -1,4 +1,4 @@
-{
+﻿{
   "Common": {
     "loading": "Carregando...",
     "back": "Voltar",
@@ -7,28 +7,30 @@
     "delete": "Excluir",
     "edit": "Editar",
     "confirmDelete": "Remover este registro?",
-    "actions": "Ações",
+    "actions": "AÃ§Ãµes",
     "dashboard": "Dashboard",
-    "quickAccess": "Acesso Rápido",
+    "quickAccess": "Acesso RÃ¡pido",
     "animals": "Animais",
-    "milkProduction": "Produção de Leite",
+    "milkProduction": "ProduÃ§Ã£o de Leite",
     "finance": "Financeiro"
-  },
+  ,
+    "tryAgain": "Tentar novamente"
+},
   "Animals": {
     "title": "Animais",
     "new": "Novo Animal",
     "manage": "Gerenciar Animais",
     "earring": "Brinco",
     "name": "Nome",
-    "breed": "Raça",
+    "breed": "RaÃ§a",
     "status": "Status",
     "birthDate": "Data de nascimento",
-    "lastCalving": "Data do último parto",
+    "lastCalving": "Data do Ãºltimo parto",
     "total": "Total de Animais",
-    "lactating": "Em Lactação",
-    "avgProduction": "Média por Animal",
+    "lactating": "Em LactaÃ§Ã£o",
+    "avgProduction": "MÃ©dia por Animal",
     "statusOptions": {
-      "lactation": "Lactação",
+      "lactation": "LactaÃ§Ã£o",
       "dry": "Seca",
       "heifer": "Novilha",
       "calf": "Bezerra"
@@ -37,46 +39,46 @@
     "confirmDelete": "Tem certeza que deseja excluir este animal?"
   },
   "Milk": {
-    "title": "Produção de Leite",
-    "new": "Nova Produção",
+    "title": "ProduÃ§Ã£o de Leite",
+    "new": "Nova ProduÃ§Ã£o",
     "filters": "Filtros",
     "animal": "Animal",
     "date": "Data",
     "liters": "Litros",
-    "period": "Período",
+    "period": "PerÃ­odo",
     "fat": "Gordura",
-    "protein": "Proteína",
+    "protein": "ProteÃ­na",
     "total": "Total de leite",
-    "perAnimal": "Produção por animal",
-    "downloadReport": "Baixar Relatório PDF",
+    "perAnimal": "ProduÃ§Ã£o por animal",
+    "downloadReport": "Baixar RelatÃ³rio PDF",
     "apply": "Aplicar",
-    "noRecords": "Nenhuma produção registrada.",
-    "dailyProduction": "Produção Diária (últimos 7 dias)",
-    "topAnimals": "Top 5 Animais (últimos 30 dias)",
+    "noRecords": "Nenhuma produÃ§Ã£o registrada.",
+    "dailyProduction": "ProduÃ§Ã£o DiÃ¡ria (Ãºltimos 7 dias)",
+    "topAnimals": "Top 5 Animais (Ãºltimos 30 dias)",
     "periodOptions": {
-      "morning": "manhã",
+      "morning": "manhÃ£",
       "afternoon": "tarde",
       "night": "noite"
     }
   },
   "Finance": {
     "title": "Financeiro",
-    "new": "Nova Transação",
+    "new": "Nova TransaÃ§Ã£o",
     "revenues": "Receitas",
     "expenses": "Despesas",
     "balance": "Saldo",
     "category": "Categoria",
-    "description": "Descrição",
+    "description": "DescriÃ§Ã£o",
     "amount": "Valor",
     "paid": "Pago",
     "yes": "Sim",
-    "no": "Não",
+    "no": "NÃ£o",
     "filters": "Filtros",
-    "downloadReport": "Baixar Relatório PDF",
+    "downloadReport": "Baixar RelatÃ³rio PDF",
     "allTypes": "Todos os tipos",
     "expense": "Despesas",
     "revenue": "Receitas",
-    "noTransactions": "Nenhuma transação registrada.",
+    "noTransactions": "Nenhuma transaÃ§Ã£o registrada.",
     "costPerLiter": "Calcular Custo por Litro"
   },
   "Auth": {
@@ -85,7 +87,7 @@
     "email": "E-mail",
     "password": "Senha",
     "farmName": "Nome da Fazenda",
-    "ownerName": "Nome do Proprietário",
+    "ownerName": "Nome do ProprietÃ¡rio",
     "logout": "Sair"
   }
 }

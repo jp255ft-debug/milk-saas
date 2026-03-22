@@ -205,7 +205,7 @@ export default function MilkPage() {
             className="border rounded px-3 py-2 text-base"
           >
             <option value="">Todos os animais</option>
-            {animals.map(a => (
+            {(animals || []).map(a => (
               <option key={a.id} value={a.id}>{a.name || a.tag_id}</option>
             ))}
           </select>
@@ -261,7 +261,7 @@ export default function MilkPage() {
           <>
             {/* Versão mobile (cards) */}
             <div className="block sm:hidden space-y-4">
-              {productions.map(p => (
+              {(productions || []).map(p => (
                 <div key={p.id} className="bg-white p-4 rounded shadow border">
                   <p><strong>Data:</strong> {p.production_date.split('-').reverse().join('/')}</p>
                   <p><strong>Animal:</strong> {getAnimalName(p.animal_id)}</p>
@@ -308,7 +308,7 @@ export default function MilkPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {productions.map(p => (
+                  {(productions || []).map(p => (
                     <tr key={p.id}>
                       <td className="border px-4 py-2">{p.production_date.split('-').reverse().join('/')}</td>
                       <td className="border px-4 py-2">{getAnimalName(p.animal_id)}</td>
