@@ -264,7 +264,7 @@ export default function FinancePage() {
               const catType = t.category?.type;
               return (
                 <div key={t.id} className="bg-white p-4 rounded shadow border">
-                  <p><strong>Data:</strong> {new Date(t.transaction_date).toLocaleDateString()}</p>
+                  <p><strong>Data:</strong> {t.transaction_date.split("-").reverse().join("/")}</p>
                   <p><strong>Categoria:</strong> {getCategoryName(t.category_id)}</p>
                   <p><strong>Descrição:</strong> {t.description || '—'}</p>
                   <p><strong>Valor:</strong> <span className={catType === 'revenue' ? 'text-green-600' : 'text-red-600'}>{formatCurrency(t.amount)}</span></p>
@@ -310,7 +310,7 @@ export default function FinancePage() {
               <tbody>
                 {transactions.map(t => (
                   <tr key={t.id}>
-                    <td className="border px-4 py-2">{new Date(t.transaction_date).toLocaleDateString()}</td>
+                    <td className="border px-4 py-2">{t.transaction_date.split("-").reverse().join("/")}</td>
                     <td className="border px-4 py-2">{getCategoryName(t.category_id)}</td>
                     <td className="border px-4 py-2">{t.description || '—'}</td>
                     <td className={`border px-4 py-2 font-bold ${t.category?.type === 'revenue' ? 'text-green-600' : 'text-red-600'}`}>

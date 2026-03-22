@@ -5,6 +5,7 @@
     "save": "Salvar",
     "update": "Atualizar",
     "delete": "Excluir",
+    "edit": "Editar",
     "confirmDelete": "Remover este registro?",
     "actions": "Ações",
     "dashboard": "Dashboard",
@@ -32,7 +33,8 @@
       "heifer": "Novilha",
       "calf": "Bezerra"
     },
-    "noAnimals": "Nenhum animal cadastrado."
+    "noAnimals": "Nenhum animal cadastrado.",
+    "confirmDelete": "Tem certeza que deseja excluir este animal?"
   },
   "Milk": {
     "title": "Produção de Leite",

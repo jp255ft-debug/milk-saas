@@ -41,6 +41,17 @@ export default function AnimalsPage() {
     }
   }, [user]);
 
+  const handleDelete = async (id: string) => {
+    if (!confirm(t('Animals.confirmDelete'))) return;
+    try {
+      await api.delete(`/animals/${id}`);
+      setAnimals(animals.filter(a => a.id !== id));
+    } catch (err) {
+      console.error(err);
+      alert(extractErrorMessage(err) || t('Animals.deleteError'));
+    }
+  };
+
   if (isLoading || loading) return <p className="p-4 sm:p-6">{t('Common.loading')}</p>;
   if (!user) return null;
 
@@ -96,6 +107,20 @@ export default function AnimalsPage() {
                 <p className="mb-1"><strong className="text-sm sm:text-base">{t('Animals.name')}:</strong> <span className="text-sm sm:text-base">{animal.name || '—'}</span></p>
                 <p className="mb-1"><strong className="text-sm sm:text-base">{t('Animals.breed')}:</strong> <span className="text-sm sm:text-base">{animal.breed || '—'}</span></p>
                 <p className="mb-1"><strong className="text-sm sm:text-base">{t('Animals.status')}:</strong> <span className="text-sm sm:text-base">{translatedStatus}</span></p>
+                <div className="flex gap-2 mt-3">
+                  <Link
+                    href={`/animals/${animal.id}/edit`}
+                    className="bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600"
+                  >
+                    {t('Common.edit')}
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(animal.id)}
+                    className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
+                  >
+                    {t('Common.delete')}
+                  </button>
+                </div>
               </div>
             );
           })}
