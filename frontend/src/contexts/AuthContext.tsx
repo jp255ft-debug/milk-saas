@@ -45,7 +45,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchUser = async () => {
     try {
       const res = await api.get('/auth/me');
-      setUser(res.data);
+      setUser({
+        id: res.data.id,
+        email: res.data.email,
+        farm_name: res.data.farm_name,
+        // Prevenção: O backend pode mandar "name" em vez de "owner_name"
+        owner_name: res.data.owner_name || res.data.name || 'Produtor',
+      });
     } catch (err) {
       setUser(null);
     } finally {
@@ -70,10 +76,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await api.post('/auth/login', { email, password }, {
         headers: { 'Content-Type': 'application/json' }
       });
-      const { access_token } = response.data;
+      
+      const { access_token, user: userData } = response.data;
+      
+      // Salva o token
       localStorage.setItem('access_token', access_token);
       api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-      await fetchUser();
+      
+      // Em vez de chamar fetchUser() e causar lentidão, salvamos instantaneamente
+      setUser({
+        id: userData.id,
+        email: userData.email,
+        farm_name: userData.farm_name,
+        owner_name: userData.owner_name || userData.name || 'Produtor',
+      });
+      
+      // Redireciona para o painel de imediato
       router.push('/dashboard');
     } catch (err: any) {
       throw new Error(extractErrorMessage(err));

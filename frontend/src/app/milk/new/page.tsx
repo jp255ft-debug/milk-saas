@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -16,37 +16,29 @@ export default function NewMilkPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [animals, setAnimals] = useState<Animal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     animal_id: '',
-    production_date: new Date().toISOString().split('T')[0],
+    production_date: new Date().toISOString().slice(0, 10),
     liters_produced: '',
     period: 'morning',
     fat_content: '',
     protein_content: '',
   });
-  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/login');
-    }
+    if (!isLoading && !user) router.push('/login');
   }, [user, isLoading, router]);
 
   useEffect(() => {
     if (user) {
-      fetchAnimals();
+      api.get('/animals/')
+        .then(res => setAnimals(res.data))
+        .catch(err => setError(extractErrorMessage(err)))
+        .finally(() => setLoading(false));
     }
   }, [user]);
-
-  const fetchAnimals = async () => {
-    try {
-      const res = await api.get('/animals/');
-      setAnimals(res.data);
-    } catch (err) {
-      console.error('Erro ao buscar animais:', err);
-      setError(extractErrorMessage(err));
-    }
-  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -55,33 +47,35 @@ export default function NewMilkPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    // Converte os campos numéricos (liters_produced, fat_content, protein_content)
+    const payload = {
+      animal_id: formData.animal_id,
+      production_date: formData.production_date,
+      liters_produced: parseFloat(formData.liters_produced) || 0,
+      period: formData.period || undefined,
+      fat_content: formData.fat_content ? parseFloat(formData.fat_content) : undefined,
+      protein_content: formData.protein_content ? parseFloat(formData.protein_content) : undefined,
+    };
     try {
-      await api.post('/milk/', {
-        animal_id: formData.animal_id,
-        production_date: formData.production_date,
-        liters_produced: parseFloat(formData.liters_produced),
-        period: formData.period || undefined,
-        fat_content: formData.fat_content ? parseFloat(formData.fat_content) : undefined,
-        protein_content: formData.protein_content ? parseFloat(formData.protein_content) : undefined,
-      });
+      await api.post('/milk/', payload);
       router.push('/milk');
     } catch (err) {
       setError(extractErrorMessage(err));
     }
   };
 
-  if (isLoading) return <p className="p-6">Carregando...</p>;
+  if (isLoading || loading) return <p>Carregando...</p>;
   if (!user) return null;
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-lg mx-auto">
       <h1 className="text-2xl font-bold mb-4">Nova Produção de Leite</h1>
       <Link href="/milk" className="text-blue-600 hover:underline block mb-4">
         ← Voltar
       </Link>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      <form onSubmit={handleSubmit} className="max-w-lg bg-white p-6 rounded shadow">
-        <div className="mb-4">
+      {error && <div className="bg-red-100 p-2 mb-4 text-red-700">{error}</div>}
+      <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow space-y-4">
+        <div>
           <label className="block text-sm font-medium mb-1">Animal *</label>
           <select
             name="animal_id"
@@ -96,7 +90,7 @@ export default function NewMilkPage() {
             ))}
           </select>
         </div>
-        <div className="mb-4">
+        <div>
           <label className="block text-sm font-medium mb-1">Data *</label>
           <input
             type="date"
@@ -107,7 +101,7 @@ export default function NewMilkPage() {
             className="w-full border rounded px-3 py-2"
           />
         </div>
-        <div className="mb-4">
+        <div>
           <label className="block text-sm font-medium mb-1">Litros *</label>
           <input
             type="number"
@@ -119,7 +113,7 @@ export default function NewMilkPage() {
             className="w-full border rounded px-3 py-2"
           />
         </div>
-        <div className="mb-4">
+        <div>
           <label className="block text-sm font-medium mb-1">Período</label>
           <select
             name="period"
@@ -132,7 +126,7 @@ export default function NewMilkPage() {
             <option value="night">Noite</option>
           </select>
         </div>
-        <div className="mb-4">
+        <div>
           <label className="block text-sm font-medium mb-1">Gordura (%)</label>
           <input
             type="number"
@@ -143,7 +137,7 @@ export default function NewMilkPage() {
             className="w-full border rounded px-3 py-2"
           />
         </div>
-        <div className="mb-4">
+        <div>
           <label className="block text-sm font-medium mb-1">Proteína (%)</label>
           <input
             type="number"
@@ -156,7 +150,7 @@ export default function NewMilkPage() {
         </div>
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
         >
           Salvar
         </button>

@@ -8,12 +8,27 @@ import { useTranslations } from 'next-intl';
 import api, { extractErrorMessage } from '@/lib/api';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
+interface MilkRecord {
+  date: string;
+  animal: string;
+  amount: number;
+}
+
+interface TopAnimal {
+  id?: string;
+  name: string;
+  total: number;
+}
+
 interface DashboardData {
-  total_animals: number;
-  lactating_animals: number;
-  avg_production_per_animal: number;
-  production_last_7_days: { date: string; total: number }[];
-  top_5_animals: { id: string; name: string; total: number }[];
+  total_animals: number;      // NOVO
+  lactating_animals: number;  // NOVO
+  total_today: number;
+  total_week: number;
+  total_month: number;
+  average_per_animal: number;
+  last_records: MilkRecord[];
+  top_animals?: TopAnimal[];
 }
 
 export default function DashboardPage() {
@@ -48,7 +63,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Altura responsiva dos gráficos
   const [chartHeight, setChartHeight] = useState(300);
   useEffect(() => {
     const handleResize = () => {
@@ -81,14 +95,16 @@ export default function DashboardPage() {
 
   if (!data) return null;
 
-  const chartData = data.production_last_7_days.map(item => ({
-    ...item,
-    date: new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  const chartData = (data.last_records || []).map(record => ({
+    date: new Date(record.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+    total: record.amount || 0,
   }));
+
+  const topAnimals = data.top_animals || [];
 
   return (
     <div className="p-4 sm:p-6">
-      {/* Cabeçalho responsivo */}
+      {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-xl sm:text-2xl font-bold">{t('Common.dashboard')}</h1>
         <button
@@ -99,27 +115,28 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* Cards KPI */}
+      {/* OS 3 NOVOS CARDS DE RESUMO */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <div className="bg-blue-100 p-4 rounded shadow">
-          <h3 className="text-sm sm:text-base font-semibold">{t('Animals.total')}</h3>
-          <p className="text-2xl sm:text-3xl font-bold">{data.total_animals}</p>
+        <div className="bg-blue-100 p-4 rounded shadow border border-blue-200">
+          <h3 className="text-sm sm:text-base font-semibold text-blue-800">Total de Animais</h3>
+          <p className="text-2xl sm:text-4xl font-bold text-blue-900 mt-2">{data.total_animals || 0}</p>
         </div>
-        <div className="bg-green-100 p-4 rounded shadow">
-          <h3 className="text-sm sm:text-base font-semibold">{t('Animals.lactating')}</h3>
-          <p className="text-2xl sm:text-3xl font-bold">{data.lactating_animals}</p>
+        
+        <div className="bg-green-100 p-4 rounded shadow border border-green-200">
+          <h3 className="text-sm sm:text-base font-semibold text-green-800">Animais em Lactação</h3>
+          <p className="text-2xl sm:text-4xl font-bold text-green-900 mt-2">{data.lactating_animals || 0}</p>
         </div>
-        <div className="bg-yellow-100 p-4 rounded shadow sm:col-span-2 lg:col-span-1">
-          <h3 className="text-sm sm:text-base font-semibold">{t('Animals.avgProduction')}</h3>
-          <p className="text-2xl sm:text-3xl font-bold">{data.avg_production_per_animal.toFixed(2)} L</p>
-          <p className="text-xs sm:text-sm">(últimos 30 dias)</p>
+        
+        <div className="bg-yellow-100 p-4 rounded shadow border border-yellow-200">
+          <h3 className="text-sm sm:text-base font-semibold text-yellow-800">Produção do Mês</h3>
+          <p className="text-2xl sm:text-4xl font-bold text-yellow-900 mt-2">{(data.total_month || 0).toFixed(2)} L</p>
         </div>
       </div>
 
       {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4">{t('Milk.dailyProduction')}</h2>
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">Produção diária (últimos registros)</h2>
           <ResponsiveContainer width="100%" height={chartHeight}>
             <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -127,40 +144,45 @@ export default function DashboardPage() {
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Line type="monotone" dataKey="total" stroke="#3b82f6" name={t('Milk.liters')} />
+              <Line type="monotone" dataKey="total" stroke="#3b82f6" name="Litros" />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Top 5 Animais - com fallback para lista no celular */}
+        {/* Top Animais (se existir) */}
         <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4">{t('Milk.topAnimals')}</h2>
-          
-          {/* Mobile: lista */}
-          <div className="block sm:hidden">
-            <ul className="divide-y divide-gray-200">
-              {data.top_5_animals.map((animal, index) => (
-                <li key={animal.id} className="py-2 flex justify-between">
-                  <span className="font-medium">{index + 1}. {animal.name}</span>
-                  <span className="text-green-600 font-bold">{animal.total.toFixed(2)} L</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">Top Animais</h2>
+          {topAnimals.length === 0 ? (
+            <p className="text-gray-500 text-sm">Nenhum dado de ranking disponível.</p>
+          ) : (
+            <>
+              {/* Mobile: lista */}
+              <div className="block sm:hidden">
+                <ul className="divide-y divide-gray-200">
+                  {topAnimals.map((animal, index) => (
+                    <li key={animal.id || index} className="py-2 flex justify-between">
+                      <span className="font-medium">{index + 1}. {animal.name}</span>
+                      <span className="text-green-600 font-bold">{(animal.total || 0).toFixed(2)} L</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-          {/* Desktop: gráfico */}
-          <div className="hidden sm:block">
-            <ResponsiveContainer width="100%" height={chartHeight}>
-              <BarChart data={data.top_5_animals} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="total" fill="#10b981" name={t('Milk.liters')} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+              {/* Desktop: gráfico */}
+              <div className="hidden sm:block">
+                <ResponsiveContainer width="100%" height={chartHeight}>
+                  <BarChart data={topAnimals} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar dataKey="total" fill="#10b981" name="Litros" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

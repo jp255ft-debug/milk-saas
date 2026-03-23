@@ -57,14 +57,23 @@ export default function NewTransactionPage() {
     try {
       await api.post('/finance/transactions', {
         category_id: formData.category_id,
-        description: formData.description || undefined,
+        description: formData.description, // Correção 1: Enviando string vazia corretamente
         amount: parseFloat(formData.amount),
         transaction_date: formData.transaction_date,
         is_paid: formData.is_paid,
       });
       router.push('/finance');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Erro ao criar transação');
+      // Correção 2: Tratamento seguro dos erros do FastAPI
+      const erroDoBackend = err.response?.data?.detail;
+      
+      if (Array.isArray(erroDoBackend)) {
+        setError(`Erro no preenchimento: ${erroDoBackend[0].msg}`);
+      } else if (typeof erroDoBackend === 'string') {
+        setError(erroDoBackend);
+      } else {
+        setError('Erro ao criar transação');
+      }
     }
   };
 

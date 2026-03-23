@@ -11,7 +11,7 @@ interface MilkProduction {
   animal_id: string;
   production_date: string;
   liters_produced: number;
-  period: string;
+  period?: string;
   fat_content?: number;
   protein_content?: number;
   animal_name?: string;
@@ -59,24 +59,55 @@ export default function MilkPage() {
     }
   }, [user]);
 
+  const mapBackendData = (backendData: any[]): MilkProduction[] => {
+    return backendData.map(item => ({
+      id: item.id,
+      animal_id: item.animal_id,
+      production_date: item.date || item.production_date || '',
+      liters_produced: (item.morning || 0) + (item.afternoon || 0) + (item.evening || 0),
+      period: undefined,
+      fat_content: undefined,
+      protein_content: undefined,
+    }));
+  };
+
   const fetchData = async () => {
     setLoading(true);
     setError('');
     try {
-      const [animalsRes, productionsRes, summaryRes] = await Promise.all([
+      const [animalsRes, productionsRes] = await Promise.all([
         api.get('/animals/'),
         api.get('/milk/'),
-        api.get('/milk/summary/totals')
       ]);
       setAnimals(animalsRes.data);
-      setProductions(productionsRes.data);
-      setSummary(summaryRes.data);
+      const mappedProductions = mapBackendData(productionsRes.data);
+      setProductions(mappedProductions);
+      computeSummary(mappedProductions);
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
       setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
+  };
+
+  const computeSummary = (productionsData: MilkProduction[]) => {
+    const total = productionsData.reduce((acc, p) => acc + p.liters_produced, 0);
+    const perAnimalMap = new Map<string, number>();
+    productionsData.forEach(p => {
+      const current = perAnimalMap.get(p.animal_id) || 0;
+      perAnimalMap.set(p.animal_id, current + p.liters_produced);
+    });
+    const perAnimal = Array.from(perAnimalMap.entries()).map(([animal_id, totalLiters]) => {
+      const animal = animals.find(a => a.id === animal_id);
+      return {
+        animal_id,
+        animal_name: animal?.name,
+        tag_id: animal?.tag_id,
+        total: totalLiters,
+      };
+    });
+    setSummary({ total_liters: total, per_animal: perAnimal });
   };
 
   const applyFilters = async () => {
@@ -87,12 +118,10 @@ export default function MilkPage() {
       if (filters.animal_id) params.append('animal_id', filters.animal_id);
       if (filters.start_date) params.append('start_date', filters.start_date);
       if (filters.end_date) params.append('end_date', filters.end_date);
-      const [productionsRes, summaryRes] = await Promise.all([
-        api.get(`/milk/?${params.toString()}`),
-        api.get(`/milk/summary/totals?${params.toString()}`)
-      ]);
-      setProductions(productionsRes.data);
-      setSummary(summaryRes.data);
+      const productionsRes = await api.get(`/milk/?${params.toString()}`);
+      const filteredProductions = mapBackendData(productionsRes.data);
+      setProductions(filteredProductions);
+      computeSummary(filteredProductions);
     } catch (err) {
       console.error('Erro ao aplicar filtros:', err);
       setError(extractErrorMessage(err));
@@ -140,18 +169,12 @@ export default function MilkPage() {
     }
   };
 
-  const periodoTexto: Record<string, string> = {
-    morning: 'manhã',
-    afternoon: 'tarde',
-    night: 'noite',
-  };
-
   if (isLoading || loading) return <p className="p-4 sm:p-6">Carregando...</p>;
   if (!user) return null;
 
   return (
     <div className="p-4 sm:p-6">
-      {/* Cabeçalho responsivo */}
+      {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex flex-wrap items-center gap-4">
           <h1 className="text-xl sm:text-2xl font-bold">Produção de Leite</h1>
@@ -238,14 +261,14 @@ export default function MilkPage() {
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-blue-50 p-4 rounded">
           <h3 className="text-lg font-medium">Total de leite</h3>
-          <p className="text-2xl sm:text-3xl font-bold">{summary.total_liters.toFixed(2)} L</p>
+          <p className="text-2xl sm:text-3xl font-bold">{(summary?.total_liters || 0).toFixed(2)} L</p>
         </div>
         <div className="bg-green-50 p-4 rounded">
           <h3 className="text-lg font-medium">Produção por animal</h3>
           <ul className="list-disc list-inside">
-            {summary.per_animal.map((item) => (
+            {(summary?.per_animal || []).map((item) => (
               <li key={item.animal_id} className="text-sm">
-                {item.animal_name || item.tag_id}: {item.total.toFixed(2)} L
+                {item.animal_name || item.tag_id}: {(item.total || 0).toFixed(2)} L
               </li>
             ))}
           </ul>
@@ -263,10 +286,10 @@ export default function MilkPage() {
             <div className="block sm:hidden space-y-4">
               {(productions || []).map(p => (
                 <div key={p.id} className="bg-white p-4 rounded shadow border">
-                  <p><strong>Data:</strong> {p.production_date.split('-').reverse().join('/')}</p>
+                  <p><strong>Data:</strong> {p.production_date ? p.production_date.split('-').reverse().join('/') : '—'}</p>
                   <p><strong>Animal:</strong> {getAnimalName(p.animal_id)}</p>
                   <p><strong>Litros:</strong> {p.liters_produced}</p>
-                  <p><strong>Período:</strong> {periodoTexto[p.period] || p.period || '—'}</p>
+                  <p><strong>Período:</strong> {p.period || '—'}</p>
                   <p><strong>Gordura:</strong> {p.fat_content || '—'}</p>
                   <p><strong>Proteína:</strong> {p.protein_content || '—'}</p>
                   <div className="flex justify-end gap-4 mt-2">
@@ -310,10 +333,10 @@ export default function MilkPage() {
                 <tbody>
                   {(productions || []).map(p => (
                     <tr key={p.id}>
-                      <td className="border px-4 py-2">{p.production_date.split('-').reverse().join('/')}</td>
+                      <td className="border px-4 py-2">{p.production_date ? p.production_date.split('-').reverse().join('/') : '—'}</td>
                       <td className="border px-4 py-2">{getAnimalName(p.animal_id)}</td>
                       <td className="border px-4 py-2">{p.liters_produced}</td>
-                      <td className="border px-4 py-2">{periodoTexto[p.period] || p.period || '—'}</td>
+                      <td className="border px-4 py-2">{p.period || '—'}</td>
                       <td className="border px-4 py-2">{p.fat_content || '—'}</td>
                       <td className="border px-4 py-2">{p.protein_content || '—'}</td>
                       <td className="border px-4 py-2 whitespace-nowrap">
@@ -329,7 +352,8 @@ export default function MilkPage() {
                               } catch (err) {
                                 alert(extractErrorMessage(err));
                               }
-                        }}}
+                            }
+                          }}
                           className="text-red-600 hover:underline"
                         >
                           Excluir

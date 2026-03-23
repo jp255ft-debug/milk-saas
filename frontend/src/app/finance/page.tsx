@@ -1,4 +1,5 @@
-﻿'use client';
+﻿
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,9 +44,7 @@ export default function FinancePage() {
   const [summary, setSummary] = useState<MonthlySummary>({ revenues: 0, expenses: 0, balance: 0 });
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/login');
-    }
+    if (!isLoading && !user) router.push('/login');
   }, [user, isLoading, router]);
 
   useEffect(() => {
@@ -56,7 +55,8 @@ export default function FinancePage() {
         fetchMonthlySummary()
       ]).catch(err => {
         console.error('Erro ao carregar dados financeiros:', err);
-        setError(extractErrorMessage(err));
+        const msg = extractErrorMessage(err);
+        setError(typeof msg === 'string' ? msg : 'Erro desconhecido');
       });
     }
   }, [user]);
@@ -108,7 +108,8 @@ export default function FinancePage() {
     try {
       await fetchTransactions();
     } catch (err) {
-      setError(extractErrorMessage(err));
+      const msg = extractErrorMessage(err);
+      setError(typeof msg === 'string' ? msg : 'Erro ao aplicar filtros');
     }
   };
 
@@ -132,7 +133,8 @@ export default function FinancePage() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Erro ao baixar relatório:', err);
-      setError(extractErrorMessage(err));
+      const msg = extractErrorMessage(err);
+      setError(typeof msg === 'string' ? msg : 'Erro ao baixar relatório');
     }
   };
 
@@ -354,4 +356,3 @@ export default function FinancePage() {
     </div>
   );
 }
-

@@ -1,24 +1,23 @@
-﻿import axios from 'axios';
+﻿
+import axios from 'axios';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
   withCredentials: true,
 });
 
-export function extractErrorMessage(err: any): string {
-  const data = err.response?.data;
+export const extractErrorMessage = (error: any): string => {
+  const data = error.response?.data;
   if (data?.detail) {
     if (Array.isArray(data.detail)) {
-      return data.detail.map((e: any) => {
-        if (e.loc && e.msg) return `${e.loc.join('.')}: ${e.msg}`;
-        return JSON.stringify(e);
-      }).join('; ');
+      // FastAPI validation error: detail is an array of { loc, msg, type, input }
+      const messages = data.detail.map((e: any) => e.msg || JSON.stringify(e)).join('; ');
+      return messages;
     }
-    if (typeof data.detail === 'string') return data.detail;
-    return JSON.stringify(data.detail);
+    return String(data.detail);
   }
-  if (data?.message) return data.message;
-  return err.message || 'Erro desconhecido';
-}
+  if (data?.message) return String(data.message);
+  return error.message || 'Erro desconhecido';
+};
 
 export default api;
