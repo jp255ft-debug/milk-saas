@@ -37,7 +37,7 @@ def register(
     db.refresh(db_farm)
     return db_farm
 
-@router.post("/token", response_model=schemas.Token)
+@router.post("/login", response_model=schemas.Token)
 def login(
     response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -60,15 +60,15 @@ def login(
         expires_delta=access_token_expires
     )
     
-    # Define cookie httpOnly
+    # AJUSTE CRUCIAL: secure=True e samesite="none" para cruzar domínios
     response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
         max_age=security.ACCESS_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         expires=security.ACCESS_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
         path="/",
     )
     
@@ -76,7 +76,8 @@ def login(
 
 @router.post("/logout")
 def logout(response: Response):
-    response.delete_cookie("access_token", path="/")
+    # AJUSTE CRUCIAL: O logout precisa das mesmas tags para conseguir limpar o cookie de produção
+    response.delete_cookie("access_token", path="/", secure=True, samesite="none")
     return {"message": "Logged out"}
 
 @router.get("/me", response_model=schemas.FarmResponse)

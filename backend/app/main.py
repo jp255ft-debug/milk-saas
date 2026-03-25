@@ -1,12 +1,11 @@
-﻿from fastapi import FastAPI, Depends, Request
+﻿import os
+import traceback
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.database import engine, Base
 from app.api.endpoints import auth
 from app.api.routers import animals, milk, finance
-from app.api import deps
-import os
-import traceback
 
 app = FastAPI(title="Milk SaaS API")
 
@@ -23,9 +22,13 @@ async def global_exception_handler(request: Request, exc: Exception):
         content=error_detail
     )
 
+# AJUSTE: Permite puxar a URL do frontend por variável de ambiente
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
 # Configuração CORS
 origins = [
     "http://localhost:3000",
+    frontend_url,
     "https://frontend-72o2zf32t-joao-paulo-limas-projects.vercel.app",
     "https://frontend-sandy-six-24.vercel.app",
     "https://frontend-mu-eight-30.vercel.app",

@@ -10,8 +10,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 
 interface MilkRecord {
   date: string;
-  animal: string;
-  amount: number;
+  total: number;
 }
 
 interface TopAnimal {
@@ -21,14 +20,11 @@ interface TopAnimal {
 }
 
 interface DashboardData {
-  total_animals: number;      // NOVO
-  lactating_animals: number;  // NOVO
-  total_today: number;
-  total_week: number;
-  total_month: number;
-  average_per_animal: number;
-  last_records: MilkRecord[];
-  top_animals?: TopAnimal[];
+  total_animals: number;
+  lactating_animals: number;
+  avg_production_per_animal: number;
+  production_last_7_days: MilkRecord[];
+  top_5_animals?: TopAnimal[];
 }
 
 export default function DashboardPage() {
@@ -95,12 +91,13 @@ export default function DashboardPage() {
 
   if (!data) return null;
 
-  const chartData = (data.last_records || []).map(record => ({
+  // CORREÇÃO: Lê a variável correta que vem do FastAPI e formata a data para os gráficos
+  const chartData = (data.production_last_7_days || []).map(record => ({
     date: new Date(record.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-    total: record.amount || 0,
+    total: record.total || 0,
   }));
 
-  const topAnimals = data.top_animals || [];
+  const topAnimals = data.top_5_animals || [];
 
   return (
     <div className="p-4 sm:p-6">
@@ -115,7 +112,7 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* OS 3 NOVOS CARDS DE RESUMO */}
+      {/* Cards de Resumo Modernos */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <div className="bg-blue-100 p-4 rounded shadow border border-blue-200">
           <h3 className="text-sm sm:text-base font-semibold text-blue-800">Total de Animais</h3>
@@ -128,15 +125,17 @@ export default function DashboardPage() {
         </div>
         
         <div className="bg-yellow-100 p-4 rounded shadow border border-yellow-200">
-          <h3 className="text-sm sm:text-base font-semibold text-yellow-800">Produção do Mês</h3>
-          <p className="text-2xl sm:text-4xl font-bold text-yellow-900 mt-2">{(data.total_month || 0).toFixed(2)} L</p>
+          <h3 className="text-sm sm:text-base font-semibold text-yellow-800">Média por Animal (30 d)</h3>
+          <p className="text-2xl sm:text-4xl font-bold text-yellow-900 mt-2">{(data.avg_production_per_animal || 0).toFixed(2)} L</p>
         </div>
       </div>
 
-      {/* Gráficos */}
+      {/* Seção dos Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        
+        {/* Gráfico de Linha (Últimos 7 dias) */}
         <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4">Produção diária (últimos registros)</h2>
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">Produção (Últimos 7 Dias)</h2>
           <ResponsiveContainer width="100%" height={chartHeight}>
             <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -149,14 +148,14 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* Top Animais (se existir) */}
+        {/* Gráfico de Barras / Lista (Top 5 Animais) */}
         <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4">Top Animais</h2>
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">Top 5 Animais (30 Dias)</h2>
           {topAnimals.length === 0 ? (
             <p className="text-gray-500 text-sm">Nenhum dado de ranking disponível.</p>
           ) : (
             <>
-              {/* Mobile: lista */}
+              {/* Mobile: lista de texto */}
               <div className="block sm:hidden">
                 <ul className="divide-y divide-gray-200">
                   {topAnimals.map((animal, index) => (
@@ -168,7 +167,7 @@ export default function DashboardPage() {
                 </ul>
               </div>
 
-              {/* Desktop: gráfico */}
+              {/* Desktop: gráfico de barras */}
               <div className="hidden sm:block">
                 <ResponsiveContainer width="100%" height={chartHeight}>
                   <BarChart data={topAnimals} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>

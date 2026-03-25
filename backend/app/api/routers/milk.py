@@ -136,7 +136,6 @@ def get_dashboard_data(
         
         last_30_days_start = end_date - timedelta(days=29)
         
-        # Produção por animal nos últimos 30 dias (para o top 5)
         per_animal = db.query(
             models.Animal.id,
             models.Animal.name,
@@ -147,7 +146,6 @@ def get_dashboard_data(
             models.MilkProduction.production_date >= last_30_days_start
         ).group_by(models.Animal.id).order_by(func.sum(models.MilkProduction.liters_produced).desc()).limit(5).all()
         
-        # Cálculo correto da média por animal (média das médias individuais)
         animal_production = db.query(
             models.Animal.id,
             func.sum(models.MilkProduction.liters_produced).label('total'),
@@ -182,7 +180,6 @@ def get_dashboard_data(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e)) from e
 
-# ========== ROTAS ESPECÍFICAS (antes das dinâmicas) ==========
 @router.get("/report")
 def get_milk_report(
     start_date: date = Query(...),
@@ -251,7 +248,6 @@ def get_milk_report(
         "Content-Disposition": f"attachment; filename=milk_report_{start_date}_{end_date}.pdf"
     })
 
-# ========== ROTAS COM PARÂMETRO DINÂMICO (devem vir depois) ==========
 @router.get("/{milk_id}", response_model=MilkProductionResponse)
 def read_milk_production(
     milk_id: str,

@@ -63,11 +63,11 @@ export default function MilkPage() {
     return backendData.map(item => ({
       id: item.id,
       animal_id: item.animal_id,
-      production_date: item.date || item.production_date || '',
-      liters_produced: (item.morning || 0) + (item.afternoon || 0) + (item.evening || 0),
-      period: undefined,
-      fat_content: undefined,
-      protein_content: undefined,
+      production_date: item.production_date || '',
+      liters_produced: parseFloat(item.liters_produced) || 0,
+      period: item.period,
+      fat_content: item.fat_content ? parseFloat(item.fat_content) : undefined,
+      protein_content: item.protein_content ? parseFloat(item.protein_content) : undefined,
     }));
   };
 
@@ -94,10 +94,12 @@ export default function MilkPage() {
   const computeSummary = (productionsData: MilkProduction[]) => {
     const total = productionsData.reduce((acc, p) => acc + p.liters_produced, 0);
     const perAnimalMap = new Map<string, number>();
+    
     productionsData.forEach(p => {
       const current = perAnimalMap.get(p.animal_id) || 0;
       perAnimalMap.set(p.animal_id, current + p.liters_produced);
     });
+    
     const perAnimal = Array.from(perAnimalMap.entries()).map(([animal_id, totalLiters]) => {
       const animal = animals.find(a => a.id === animal_id);
       return {
@@ -107,6 +109,7 @@ export default function MilkPage() {
         total: totalLiters,
       };
     });
+    
     setSummary({ total_liters: total, per_animal: perAnimal });
   };
 
@@ -137,6 +140,13 @@ export default function MilkPage() {
   const getAnimalName = (animalId: string) => {
     const animal = animals.find(a => a.id === animalId);
     return animal ? (animal.name || animal.tag_id) : animalId;
+  };
+
+  const translatePeriod = (period?: string) => {
+    if (period === 'morning') return 'Manhã';
+    if (period === 'afternoon') return 'Tarde';
+    if (period === 'evening') return 'Noite';
+    return period || '—';
   };
 
   const handleDownloadReport = async () => {
@@ -174,7 +184,6 @@ export default function MilkPage() {
 
   return (
     <div className="p-4 sm:p-6">
-      {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex flex-wrap items-center gap-4">
           <h1 className="text-xl sm:text-2xl font-bold">Produção de Leite</h1>
@@ -187,7 +196,6 @@ export default function MilkPage() {
         </Link>
       </div>
 
-      {/* Acesso Rápido */}
       <div className="bg-white p-4 rounded shadow mb-6">
         <h2 className="text-lg sm:text-xl font-semibold mb-4">Acesso Rápido</h2>
         <div className="flex flex-wrap gap-2">
@@ -209,7 +217,6 @@ export default function MilkPage() {
         </div>
       )}
 
-      {/* Filtros */}
       <div className="mt-6 bg-gray-100 p-4 rounded">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <h2 className="text-lg sm:text-xl font-semibold">Filtros</h2>
@@ -257,7 +264,6 @@ export default function MilkPage() {
         </div>
       </div>
 
-      {/* Resumo */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-blue-50 p-4 rounded">
           <h3 className="text-lg font-medium">Total de leite</h3>
@@ -275,23 +281,21 @@ export default function MilkPage() {
         </div>
       </div>
 
-      {/* Registros */}
       <div className="mt-6">
         <h2 className="text-lg sm:text-xl font-semibold mb-2">Registros</h2>
         {productions.length === 0 ? (
           <p>Nenhuma produção registrada.</p>
         ) : (
           <>
-            {/* Versão mobile (cards) */}
             <div className="block sm:hidden space-y-4">
               {(productions || []).map(p => (
                 <div key={p.id} className="bg-white p-4 rounded shadow border">
                   <p><strong>Data:</strong> {p.production_date ? p.production_date.split('-').reverse().join('/') : '—'}</p>
                   <p><strong>Animal:</strong> {getAnimalName(p.animal_id)}</p>
                   <p><strong>Litros:</strong> {p.liters_produced}</p>
-                  <p><strong>Período:</strong> {p.period || '—'}</p>
-                  <p><strong>Gordura:</strong> {p.fat_content || '—'}</p>
-                  <p><strong>Proteína:</strong> {p.protein_content || '—'}</p>
+                  <p><strong>Período:</strong> {translatePeriod(p.period)}</p>
+                  <p><strong>Gordura:</strong> {p.fat_content ? `${p.fat_content}%` : '—'}</p>
+                  <p><strong>Proteína:</strong> {p.protein_content ? `${p.protein_content}%` : '—'}</p>
                   <div className="flex justify-end gap-4 mt-2">
                     <Link href={`/milk/${p.id}/edit`} className="text-blue-600 hover:underline">
                       Editar
@@ -316,7 +320,6 @@ export default function MilkPage() {
               ))}
             </div>
 
-            {/* Versão desktop (tabela) */}
             <div className="hidden sm:block overflow-x-auto">
               <table className="min-w-full bg-white border">
                 <thead>
@@ -336,9 +339,9 @@ export default function MilkPage() {
                       <td className="border px-4 py-2">{p.production_date ? p.production_date.split('-').reverse().join('/') : '—'}</td>
                       <td className="border px-4 py-2">{getAnimalName(p.animal_id)}</td>
                       <td className="border px-4 py-2">{p.liters_produced}</td>
-                      <td className="border px-4 py-2">{p.period || '—'}</td>
-                      <td className="border px-4 py-2">{p.fat_content || '—'}</td>
-                      <td className="border px-4 py-2">{p.protein_content || '—'}</td>
+                      <td className="border px-4 py-2">{translatePeriod(p.period)}</td>
+                      <td className="border px-4 py-2">{p.fat_content ? `${p.fat_content}%` : '—'}</td>
+                      <td className="border px-4 py-2">{p.protein_content ? `${p.protein_content}%` : '—'}</td>
                       <td className="border px-4 py-2 whitespace-nowrap">
                         <Link href={`/milk/${p.id}/edit`} className="text-blue-600 hover:underline mr-2">
                           Editar

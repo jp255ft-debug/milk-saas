@@ -42,7 +42,7 @@ class TransactionResponse(TransactionBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-# ---------- Cálculos ----------
+# ---------- Cï¿½lculos ----------
 class CostPerLiterResponse(BaseModel):
     period_start: date
     period_end: date
