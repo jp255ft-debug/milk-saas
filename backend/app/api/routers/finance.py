@@ -49,6 +49,63 @@ def create_category(
     db.commit()
     db.refresh(category)
     return category
+@router.post("/categories/seed", summary="Plantar categorias financeiras padrão")
+def seed_default_categories(
+    db: Session = Depends(deps.get_db),
+    current_farm: models.Farm = Depends(deps.get_current_farm)
+):
+    """
+    Cadastra automaticamente as categorias de gestão agropecuária
+    para a fazenda logada, evitando digitação manual.
+    """
+    
+    CATEGORIAS_PADRAO = [
+        # === RECEITAS (revenue) ===
+        {"name": "Leite In Natura", "type": "revenue"},
+        {"name": "Venda de Bezerros", "type": "revenue"},
+        {"name": "Venda de Vacas (Descarte)", "type": "revenue"},
+        {"name": "Outras Receitas (Esterco, etc)", "type": "revenue"},
+
+        # === DESPESAS VARIÁVEIS (variable_cost) ===
+        {"name": "Concentrado - Milho", "type": "variable_cost"},
+        {"name": "Concentrado - Soja", "type": "variable_cost"},
+        {"name": "Concentrado - Núcleo/Mineral", "type": "variable_cost"},
+        {"name": "Volumoso - Silagem/Feno", "type": "variable_cost"},
+        {"name": "Sanidade - Vacinas e Remédios", "type": "variable_cost"},
+        {"name": "Reprodução - Sêmen/IATF", "type": "variable_cost"},
+        {"name": "Higiene - Limpeza de Ordenha", "type": "variable_cost"},
+        {"name": "Energia e Água", "type": "variable_cost"},
+        {"name": "Manutenção - Máquinas e Cercas", "type": "variable_cost"},
+
+        # === DESPESAS FIXAS (fixed_cost) ===
+        {"name": "Mão de Obra - Salários", "type": "fixed_cost"},
+        {"name": "Combustível (Trator/Moto)", "type": "fixed_cost"},
+        {"name": "Impostos e Taxas (ITR, Licenças)", "type": "fixed_cost"},
+        {"name": "Pró-labore (Retirada)", "type": "fixed_cost"},
+        {"name": "Depreciação", "type": "fixed_cost"}
+    ]
+
+    inseridas = 0
+
+    for cat in CATEGORIAS_PADRAO:
+        # Verifica se a categoria já existe para esta fazenda
+        existe = db.query(models.FinancialCategory).filter(
+            models.FinancialCategory.farm_id == current_farm.id,
+            models.FinancialCategory.name == cat["name"]
+        ).first()
+
+        if not existe:
+            nova_categoria = models.FinancialCategory(
+                farm_id=current_farm.id,
+                name=cat["name"],
+                type=cat["type"]
+            )
+            db.add(nova_categoria)
+            inseridas += 1
+
+    db.commit()
+    
+    return {"message": f"Sucesso! {inseridas} novas categorias foram cadastradas para a sua fazenda."}
 
 
 # ========== TRANSAÇÕES ==========
