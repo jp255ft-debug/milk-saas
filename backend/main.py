@@ -7,17 +7,12 @@ from collections import defaultdict
 
 app = FastAPI()
 
-# 1. CORS - LIBERAÇÃO TOTAL PARA SEU FRONTEND
-# Adicionei a URL oficial que aparece no seu navegador (milk-saas.vercel.app)
+# 1. CORS - LIBERAÇÃO TOTAL (Para eliminar o "Network Error" de vez)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://frontend-mu-eight-30.vercel.app",
-        "https://milk-saas.vercel.app"  # URL DO SEU PRINT
-    ],
+    allow_origins=["*"],  # Usar "*" temporariamente garante que qualquer URL da Vercel funcione
     allow_credentials=True,
-    allow_methods=["*"], # Permite GET, POST, PUT, DELETE, OPTIONS
+    allow_methods=["*"], 
     allow_headers=["*"],
 )
 
@@ -58,21 +53,10 @@ class FinanceTransaction(BaseModel):
     is_paid: bool = True
 
 # ---------- Dados em memória (Mock DB) ----------
+# DICA: Quando você criar um novo item pelo site, ele ganhará um ID novo e você conseguirá excluir.
 animals_db = [
     {"id": "1", "tag_id": "001", "name": "Mimosa", "breed": "Girolando", "status": "lactation"},
     {"id": "2", "tag_id": "002", "name": "Estrela", "breed": "Holandes", "status": "dry"},
-]
-
-milk_db = [
-    {
-        "id": 1,
-        "animal_id": "1",
-        "date": datetime.now().strftime("%Y-%m-%d"),
-        "morning": 5.2,
-        "afternoon": 4.5,
-        "evening": 3.8,
-        "liters_produced": 13.5
-    }
 ]
 
 categories_db = [
@@ -134,7 +118,7 @@ def get_animals():
 @app.delete("/animals/{animal_id}")
 def delete_animal(animal_id: str):
     for idx, a in enumerate(animals_db):
-        if a["id"] == animal_id:
+        if str(a["id"]) == str(animal_id):
             del animals_db[idx]
             return {"message": f"Animal {animal_id} removido"}
     raise HTTPException(status_code=404, detail="Animal não encontrado")
@@ -146,7 +130,7 @@ def get_categories():
     return categories_db
 
 @app.get("/finance/transactions")
-def get_transactions(start_date: Optional[str] = None, end_date: Optional[str] = None, type: Optional[str] = None):
+def get_transactions(start_date: Optional[str] = None, end_date: Optional[str] = None):
     result = transactions_db
     if start_date:
         result = [t for t in result if t["transaction_date"] >= start_date]
@@ -161,7 +145,6 @@ def get_transactions(start_date: Optional[str] = None, end_date: Optional[str] =
 
 @app.get("/finance/summary")
 def get_summary(year: int, month: int):
-    # Filtra transações do mês selecionado
     prefix = f"{year}-{month:02d}"
     filtered = [t for t in transactions_db if t["transaction_date"].startswith(prefix)]
     
@@ -169,13 +152,11 @@ def get_summary(year: int, month: int):
     expenses = 0.0
     for t in filtered:
         cat = next((c for c in categories_db if c["id"] == t["category_id"]), None)
-        # Considera 'revenue' como entrada, o resto como saída
         if cat and cat["type"] == "revenue":
             revenues += t["amount"]
         else:
             expenses += t["amount"]
             
-    # AJUSTADO: Nomes das chaves para bater com o Frontend (Vercel)
     return {
         "receitas": revenues,
         "despesas": expenses,
@@ -185,7 +166,7 @@ def get_summary(year: int, month: int):
 @app.put("/finance/transactions/{transaction_id}")
 def update_transaction(transaction_id: str, trans: FinanceTransaction):
     for idx, t in enumerate(transactions_db):
-        if t["id"] == transaction_id:
+        if str(t["id"]) == str(transaction_id):
             updated = {"id": transaction_id, **trans.model_dump()}
             transactions_db[idx] = updated
             cat = next((c for c in categories_db if c["id"] == updated["category_id"]), None)
@@ -195,20 +176,22 @@ def update_transaction(transaction_id: str, trans: FinanceTransaction):
 @app.delete("/finance/transactions/{transaction_id}")
 def delete_transaction(transaction_id: str):
     for idx, t in enumerate(transactions_db):
-        if t["id"] == transaction_id:
+        if str(t["id"]) == str(transaction_id):
             del transactions_db[idx]
             return {"message": f"Transação {transaction_id} removida"}
     raise HTTPException(status_code=404, detail="Transação não encontrada")
 
 # ---------- Rotas de Relatório (PDF) ----------
 
-# AJUSTADO: Rota agora é /report/pdf para coincidir com o Frontend
 @app.get("/finance/report/pdf")
 async def finance_report(start_date: str, end_date: str):
-    # PDF Mock para teste de download
+    # PDF Mock - Adicionado cabeçalho para evitar erro 500
     pdf_falso = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
     return Response(
         content=pdf_falso, 
         media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=relatorio_financeiro.pdf"}
+        headers={
+            "Content-Disposition": f"attachment; filename=relatorio_financeiro.pdf",
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
     )
