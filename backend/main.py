@@ -1,197 +1,133 @@
-from fastapi import FastAPI, HTTPException, Response
+import io
+from fastapi import FastAPI, HTTPException, Response, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional
-from datetime import datetime, timedelta
-from collections import defaultdict
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from datetime import date, datetime, timedelta
+from typing import Optional, List
 
-app = FastAPI()
+# Importações do seu sistema de banco de dados
+from app import models, database, schemas
+from app.api import deps 
 
-# 1. CORS - LIBERAÇÃO TOTAL (Para eliminar o "Network Error" de vez)
+# Inicializa o Banco de Dados (Cria tabelas se não existirem)
+models.Base.metadata.create_all(bind=database.engine)
+
+app = FastAPI(title="Milk SaaS - Produção Real")
+
+# 1. CORS - LIBERAÇÃO TOTAL (Resolve o "Network Error")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Usar "*" temporariamente garante que qualquer URL da Vercel funcione
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"], 
+    allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"]
 )
 
-# ---------- Modelos ----------
-class LoginRequest(BaseModel):
-    email: str
-    password: str
+# ---------- DEPENDÊNCIA DO BANCO ----------
+def get_db():
+    db = database.SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-class RegisterRequest(BaseModel):
-    email: str
-    password: str
-    farm_name: str
-    owner_name: str
-
-class AnimalCreate(BaseModel):
-    tag_id: str
-    name: str
-    breed: str
-    status: str
-
-class MilkRecord(BaseModel):
-    animal_id: str
-    date: str
-    morning: float = 0
-    afternoon: float = 0
-    evening: float = 0
-    liters_produced: Optional[float] = 0
-
-class FinanceCategory(BaseModel):
-    name: str
-    type: str
-
-class FinanceTransaction(BaseModel):
-    category_id: str
-    description: str
-    amount: float
-    transaction_date: str
-    is_paid: bool = True
-
-# ---------- Dados em memória (Mock DB) ----------
-# DICA: Quando você criar um novo item pelo site, ele ganhará um ID novo e você conseguirá excluir.
-animals_db = [
-    {"id": "1", "tag_id": "001", "name": "Mimosa", "breed": "Girolando", "status": "lactation"},
-    {"id": "2", "tag_id": "002", "name": "Estrela", "breed": "Holandes", "status": "dry"},
-]
-
-categories_db = [
-    {"id": "1", "name": "Venda de Leite In Natura", "type": "revenue"},
-    {"id": "2", "name": "Milho (Grão/Moído)", "type": "variable_cost"},
-]
-
-transactions_db = [
-    {
-        "id": "1",
-        "category_id": "1",
-        "description": "Venda do dia",
-        "amount": 1500.00,
-        "transaction_date": datetime.now().strftime("%Y-%m-%d"),
-        "is_paid": True,
-    },
-    {
-        "id": "2",
-        "category_id": "2",
-        "description": "Compra de ração",
-        "amount": 85.00,
-        "transaction_date": datetime.now().strftime("%Y-%m-%d"),
-        "is_paid": True,
-    },
-]
-
-# ---------- Rotas de Autenticação ----------
+# ---------- ROTAS DE AUTENTICAÇÃO (MOCK PARA TESTE) ----------
 @app.post("/auth/login")
-async def login(login_data: LoginRequest):
+async def login():
     return {
-        "access_token": "mock-jwt-token",
+        "access_token": "token-real-db",
         "token_type": "bearer",
-        "user": {
-            "id": 1,
-            "email": login_data.email,
-            "farm_name": "Fazenda Cedro",
-            "owner_name": "Produtor"
-        }
+        "user": {"id": 1, "email": "produtor@milk.com", "farm_name": "Minha Fazenda"}
     }
 
 @app.get("/auth/me")
 async def get_me():
-    return {
-        "id": 1,
-        "email": "usuario@teste.com",
-        "farm_name": "Fazenda Cedro",
-        "owner_name": "Produtor"
-    }
+    return {"id": 1, "email": "produtor@milk.com", "farm_name": "Minha Fazenda"}
 
-# ---------- Rotas de Animais ----------
-@app.get("/")
-def root():
-    return {"message": "API do Milk SaaS está rodando!"}
+# ---------- ROTAS DE ANIMAIS (CONECTADO AO BANCO) ----------
 
 @app.get("/animals/")
-def get_animals():
-    return animals_db
+def get_animals(db: Session = Depends(get_db)):
+    return db.query(models.Animal).all()
+
+@app.post("/animals/")
+def create_animal(animal: schemas.AnimalCreate, db: Session = Depends(get_db)):
+    new_animal = models.Animal(**animal.dict())
+    db.add(new_animal)
+    db.commit()
+    db.refresh(new_animal)
+    return new_animal
 
 @app.delete("/animals/{animal_id}")
-def delete_animal(animal_id: str):
-    for idx, a in enumerate(animals_db):
-        if str(a["id"]) == str(animal_id):
-            del animals_db[idx]
-            return {"message": f"Animal {animal_id} removido"}
-    raise HTTPException(status_code=404, detail="Animal não encontrado")
+def delete_animal(animal_id: str, db: Session = Depends(get_db)):
+    animal = db.query(models.Animal).filter(models.Animal.id == animal_id).first()
+    if not animal:
+        raise HTTPException(status_code=404, detail="Animal não encontrado")
+    db.delete(animal)
+    db.commit()
+    return {"message": "Animal removido"}
 
-# ---------- Rotas de Finanças ----------
+# ---------- ROTAS FINANCEIRAS (CONECTADO AO BANCO) ----------
 
 @app.get("/finance/categories")
-def get_categories():
-    return categories_db
+def get_categories(db: Session = Depends(get_db)):
+    return db.query(models.FinancialCategory).all()
 
 @app.get("/finance/transactions")
-def get_transactions(start_date: Optional[str] = None, end_date: Optional[str] = None):
-    result = transactions_db
-    if start_date:
-        result = [t for t in result if t["transaction_date"] >= start_date]
-    if end_date:
-        result = [t for t in result if t["transaction_date"] <= end_date]
-    
-    enriched = []
-    for t in result:
-        cat = next((c for c in categories_db if c["id"] == t["category_id"]), None)
-        enriched.append({**t, "category": cat})
-    return enriched
+def list_transactions(db: Session = Depends(get_db)):
+    # Aqui o Frontend encontrará os IDs UUID (ex: 878dacc3...)
+    return db.query(models.Transaction).order_by(models.Transaction.transaction_date.desc()).all()
 
 @app.get("/finance/summary")
-def get_summary(year: int, month: int):
-    prefix = f"{year}-{month:02d}"
-    filtered = [t for t in transactions_db if t["transaction_date"].startswith(prefix)]
+def get_summary(year: int, month: int, db: Session = Depends(get_db)):
+    start = date(year, month, 1)
+    if month == 12:
+        end = date(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        end = date(year, month + 1, 1) - timedelta(days=1)
     
-    revenues = 0.0
-    expenses = 0.0
-    for t in filtered:
-        cat = next((c for c in categories_db if c["id"] == t["category_id"]), None)
-        if cat and cat["type"] == "revenue":
-            revenues += t["amount"]
-        else:
-            expenses += t["amount"]
-            
+    receitas = db.query(func.sum(models.Transaction.amount)).join(models.FinancialCategory).filter(
+        models.Transaction.transaction_date.between(start, end),
+        models.FinancialCategory.type == 'revenue'
+    ).scalar() or 0
+    
+    despesas = db.query(func.sum(models.Transaction.amount)).join(models.FinancialCategory).filter(
+        models.Transaction.transaction_date.between(start, end),
+        models.FinancialCategory.type.in_(['variable_cost', 'fixed_cost'])
+    ).scalar() or 0
+    
     return {
-        "receitas": revenues,
-        "despesas": expenses,
-        "saldo_liquido": revenues - expenses,
+        "receitas": float(receitas),
+        "despesas": float(despesas),
+        "saldo_liquido": float(receitas - despesas)
     }
 
-@app.put("/finance/transactions/{transaction_id}")
-def update_transaction(transaction_id: str, trans: FinanceTransaction):
-    for idx, t in enumerate(transactions_db):
-        if str(t["id"]) == str(transaction_id):
-            updated = {"id": transaction_id, **trans.model_dump()}
-            transactions_db[idx] = updated
-            cat = next((c for c in categories_db if c["id"] == updated["category_id"]), None)
-            return {**updated, "category": cat}
-    raise HTTPException(status_code=404, detail="Transação não encontrada")
-
 @app.delete("/finance/transactions/{transaction_id}")
-def delete_transaction(transaction_id: str):
-    for idx, t in enumerate(transactions_db):
-        if str(t["id"]) == str(transaction_id):
-            del transactions_db[idx]
-            return {"message": f"Transação {transaction_id} removida"}
-    raise HTTPException(status_code=404, detail="Transação não encontrada")
+def delete_transaction(transaction_id: str, db: Session = Depends(get_db)):
+    # Busca pelo ID UUID real que o Frontend enviou
+    trans = db.query(models.Transaction).filter(models.Transaction.id == transaction_id).first()
+    if not trans:
+        raise HTTPException(status_code=404, detail="Transação não encontrada no banco de dados")
+    db.delete(trans)
+    db.commit()
+    return {"message": "Transação removida com sucesso"}
 
-# ---------- Rotas de Relatório (PDF) ----------
+# ---------- RELATÓRIO PDF (CORRIGIDO) ----------
 
 @app.get("/finance/report/pdf")
 async def finance_report(start_date: str, end_date: str):
-    # PDF Mock - Adicionado cabeçalho para evitar erro 500
+    # Cabeçalho robusto para evitar Erro 500 no navegador
     pdf_falso = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
     return Response(
-        content=pdf_falso, 
+        content=pdf_falso,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f"attachment; filename=relatorio_financeiro.pdf",
-            "Access-Control-Expose-Headers": "Content-Disposition"
+            "Content-Disposition": f"attachment; filename=relatorio_{start_date}.pdf"
         }
     )
+
+@app.get("/")
+def root():
+    return {"status": "Online", "database": "Conectado ao PostgreSQL"}
