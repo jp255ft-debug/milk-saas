@@ -1,5 +1,4 @@
-﻿
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,10 +22,11 @@ interface Transaction {
   category?: Category;
 }
 
+// ATUALIZADO: Nomes batendo com o novo retorno do FastAPI
 interface MonthlySummary {
-  revenues: number;
-  expenses: number;
-  balance: number;
+  receitas: number;
+  despesas: number;
+  saldo_liquido: number;
 }
 
 export default function FinancePage() {
@@ -41,7 +41,13 @@ export default function FinancePage() {
     end_date: '',
     type: '',
   });
-  const [summary, setSummary] = useState<MonthlySummary>({ revenues: 0, expenses: 0, balance: 0 });
+
+  // ATUALIZADO: Inicialização com chaves em português
+  const [summary, setSummary] = useState<MonthlySummary>({ 
+    receitas: 0, 
+    despesas: 0, 
+    saldo_liquido: 0 
+  });
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
@@ -92,6 +98,7 @@ export default function FinancePage() {
   const fetchMonthlySummary = async () => {
     try {
       const now = new Date();
+      // O backend agora retorna receitas, despesas e saldo_liquido
       const res = await api.get(`/finance/summary?year=${now.getFullYear()}&month=${now.getMonth() + 1}`);
       setSummary(res.data);
     } catch (err) {
@@ -120,13 +127,14 @@ export default function FinancePage() {
     }
     setError('');
     try {
-      const response = await api.get(`/finance/report?start_date=${filters.start_date}&end_date=${filters.end_date}`, {
+      // CORRIGIDO: Rota agora é /report/pdf
+      const response = await api.get(`/finance/report/pdf?start_date=${filters.start_date}&end_date=${filters.end_date}`, {
         responseType: 'blob'
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `relatorio_financeiro_${filters.start_date}_${filters.end_date}.pdf`);
+      link.setAttribute('download', `relatorio_financeiro_${filters.start_date}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -144,7 +152,9 @@ export default function FinancePage() {
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    // PROTEÇÃO: Garante que se o valor for nulo ou NaN, mostre 0
+    const safeValue = value || 0;
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(safeValue);
   };
 
   if (isLoading) return <p className="p-4 sm:p-6">Carregando...</p>;
@@ -152,7 +162,7 @@ export default function FinancePage() {
 
   return (
     <div className="p-4 sm:p-6">
-      {/* Cabeçalho responsivo */}
+      {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex flex-wrap items-center gap-4">
           <h1 className="text-xl sm:text-2xl font-bold">Financeiro</h1>
@@ -187,20 +197,20 @@ export default function FinancePage() {
         </div>
       )}
 
-      {/* Resumo do mês */}
+      {/* Resumo do mês (CORRIGIDO) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-green-100 p-4 rounded shadow">
-          <h3 className="text-sm sm:text-base font-semibold">Receitas</h3>
-          <p className="text-2xl sm:text-3xl font-bold text-green-700">{formatCurrency(summary.revenues)}</p>
+        <div className="bg-green-100 p-4 rounded shadow border border-green-200">
+          <h3 className="text-sm sm:text-base font-semibold text-green-800">Receitas</h3>
+          <p className="text-2xl sm:text-3xl font-bold text-green-700">{formatCurrency(summary.receitas)}</p>
         </div>
-        <div className="bg-red-100 p-4 rounded shadow">
-          <h3 className="text-sm sm:text-base font-semibold">Despesas</h3>
-          <p className="text-2xl sm:text-3xl font-bold text-red-700">{formatCurrency(summary.expenses)}</p>
+        <div className="bg-red-100 p-4 rounded shadow border border-red-200">
+          <h3 className="text-sm sm:text-base font-semibold text-red-800">Despesas</h3>
+          <p className="text-2xl sm:text-3xl font-bold text-red-700">{formatCurrency(summary.despesas)}</p>
         </div>
-        <div className="bg-blue-100 p-4 rounded shadow">
-          <h3 className="text-sm sm:text-base font-semibold">Saldo</h3>
-          <p className={`text-2xl sm:text-3xl font-bold ${summary.balance >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
-            {formatCurrency(summary.balance)}
+        <div className="bg-blue-100 p-4 rounded shadow border border-blue-200">
+          <h3 className="text-sm sm:text-base font-semibold text-blue-800">Saldo</h3>
+          <p className={`text-2xl sm:text-3xl font-bold ${summary.saldo_liquido >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
+            {formatCurrency(summary.saldo_liquido)}
           </p>
         </div>
       </div>
@@ -223,7 +233,6 @@ export default function FinancePage() {
             value={filters.start_date}
             onChange={handleFilterChange}
             className="border rounded px-3 py-2 text-base"
-            placeholder="Data inicial"
           />
           <input
             type="date"
@@ -231,7 +240,6 @@ export default function FinancePage() {
             value={filters.end_date}
             onChange={handleFilterChange}
             className="border rounded px-3 py-2 text-base"
-            placeholder="Data final"
           />
           <select
             name="type"
@@ -240,7 +248,8 @@ export default function FinancePage() {
             className="border rounded px-3 py-2 text-base"
           >
             <option value="">Todos os tipos</option>
-            <option value="expense">Despesas</option>
+            <option value="variable_cost">Despesas Variáveis</option>
+            <option value="fixed_cost">Despesas Fixas</option>
             <option value="revenue">Receitas</option>
           </select>
           <button
@@ -259,70 +268,31 @@ export default function FinancePage() {
       ) : transactions.length === 0 ? (
         <p>Nenhuma transação registrada.</p>
       ) : (
-        <>
-          {/* Versão mobile (cards) */}
-          <div className="block sm:hidden space-y-4">
-            {(transactions || []).map(t => {
-              const catType = t.category?.type;
-              return (
-                <div key={t.id} className="bg-white p-4 rounded shadow border">
-                  <p><strong>Data:</strong> {t.transaction_date.split("-").reverse().join("/")}</p>
-                  <p><strong>Categoria:</strong> {getCategoryName(t.category_id)}</p>
-                  <p><strong>Descrição:</strong> {t.description || '—'}</p>
-                  <p><strong>Valor:</strong> <span className={catType === 'revenue' ? 'text-green-600' : 'text-red-600'}>{formatCurrency(t.amount)}</span></p>
-                  <p><strong>Pago:</strong> {t.is_paid ? 'Sim' : 'Não'}</p>
-                  <div className="flex justify-end gap-4 mt-2">
-                    <Link href={`/finance/${t.id}/edit`} className="text-blue-600 hover:underline">
-                      Editar
-                    </Link>
-                    <button
-                      onClick={async () => {
-                        if (confirm('Remover esta transação?')) {
-                          try {
-                            await api.delete(`/finance/transactions/${t.id}`);
-                            await Promise.all([fetchTransactions(), fetchMonthlySummary()]);
-                          } catch (err) {
-                            alert(extractErrorMessage(err));
-                          }
-                        }
-                      }}
-                      className="text-red-600 hover:underline"
-                    >
-                      Excluir
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Versão desktop (tabela) */}
-          <div className="hidden sm:block overflow-x-auto">
-            <table className="min-w-full bg-white border">
-              <thead>
-                <tr>
-                  <th className="border px-4 py-2">Data</th>
-                  <th className="border px-4 py-2">Categoria</th>
-                  <th className="border px-4 py-2">Descrição</th>
-                  <th className="border px-4 py-2">Valor</th>
-                  <th className="border px-4 py-2">Pago</th>
-                  <th className="border px-4 py-2">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(transactions || []).map(t => (
-                  <tr key={t.id}>
-                    <td className="border px-4 py-2">{t.transaction_date.split("-").reverse().join("/")}</td>
-                    <td className="border px-4 py-2">{getCategoryName(t.category_id)}</td>
-                    <td className="border px-4 py-2">{t.description || '—'}</td>
-                    <td className={`border px-4 py-2 font-bold ${t.category?.type === 'revenue' ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(t.amount)}
-                    </td>
-                    <td className="border px-4 py-2">{t.is_paid ? 'Sim' : 'Não'}</td>
-                    <td className="border px-4 py-2 whitespace-nowrap">
-                      <Link href={`/finance/${t.id}/edit`} className="text-blue-600 hover:underline mr-2">
-                        Editar
-                      </Link>
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="border px-4 py-2 text-left">Data</th>
+                <th className="border px-4 py-2 text-left">Categoria</th>
+                <th className="border px-4 py-2 text-left">Descrição</th>
+                <th className="border px-4 py-2 text-left">Valor</th>
+                <th className="border px-4 py-2 text-left">Pago</th>
+                <th className="border px-4 py-2 text-left">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map(t => (
+                <tr key={t.id} className="hover:bg-gray-50">
+                  <td className="border px-4 py-2">{t.transaction_date.split("-").reverse().join("/")}</td>
+                  <td className="border px-4 py-2">{getCategoryName(t.category_id)}</td>
+                  <td className="border px-4 py-2">{t.description || '—'}</td>
+                  <td className={`border px-4 py-2 font-bold ${t.category?.type === 'revenue' ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatCurrency(t.amount)}
+                  </td>
+                  <td className="border px-4 py-2">{t.is_paid ? 'Sim' : 'Não'}</td>
+                  <td className="border px-4 py-2">
+                    <div className="flex gap-3">
+                      <Link href={`/finance/${t.id}/edit`} className="text-blue-600 hover:underline">Editar</Link>
                       <button
                         onClick={async () => {
                           if (confirm('Remover esta transação?')) {
@@ -338,16 +308,16 @@ export default function FinancePage() {
                       >
                         Excluir
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
-      {/* Link para cálculo de custo por litro */}
+      {/* Link para custo por litro */}
       <div className="mt-6">
         <Link href="/finance/cost-per-liter" className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 text-sm inline-block">
           Calcular Custo por Litro
