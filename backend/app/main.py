@@ -12,15 +12,13 @@ from app.api.routers import animals, milk, finance
 app = FastAPI(title="Milk SaaS API")
 
 # 1. CRIAÇÃO AUTOMÁTICA DE TABELAS
-# Isso garante que o banco de dados seja estruturado assim que a API ligar
 @app.on_event("startup")
 def startup():
     print("Conectando ao banco de dados e criando tabelas...")
     Base.metadata.create_all(bind=engine)
     print("Tabelas criadas com sucesso!")
 
-# 2. HANDLER GLOBAL DE EXCEÇÕES
-# Se algo der errado (Erro 500), ele vai te mostrar o motivo real no navegador
+# 2. HANDLER GLOBAL DE EXCEÇÕES (Para Auditoria)
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     error_detail = {
@@ -33,20 +31,10 @@ async def global_exception_handler(request: Request, exc: Exception):
         content=error_detail
     )
 
-# 3. CONFIGURAÇÃO DE CORS (SEGURANÇA)
-# Puxa a URL do frontend da variável de ambiente ou usa o padrão local
-frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
-
-origins = [
-    "http://localhost:3000",
-    frontend_url,
-    # Aqui usamos um "hack" para aceitar qualquer subdomínio do seu Vercel
-    "https://frontend-sandy-six-24.vercel.app", 
-]
-
+# 3. CONFIGURAÇÃO DE CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Troque por 'origins' se quiser restrição total, '*' libera para testes
+    allow_origins=["*"], # Liberação total para evitar Network Error
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -60,8 +48,4 @@ app.include_router(finance.router, prefix="/finance", tags=["financeiro"])
 
 @app.get("/")
 def root():
-    return {
-        "status": "online",
-        "message": "API do Milk SaaS funcionando!",
-        "database": "conectado"
-    }
+    return {"status": "online", "message": "API do Milk SaaS funcionando!"}
