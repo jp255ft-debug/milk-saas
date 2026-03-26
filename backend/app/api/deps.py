@@ -7,7 +7,8 @@ from app import models
 from app.core import security
 from app.database import SessionLocal
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token", auto_error=False)
+# === CORREÇÃO: Apontando para a rota de login correta ===
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 def get_db():
     db = SessionLocal()
