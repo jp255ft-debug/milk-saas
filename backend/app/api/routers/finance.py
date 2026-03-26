@@ -85,7 +85,6 @@ def get_transactions(
     if end_date: query = query.filter(models.Transaction.transaction_date <= end_date)
     return query.order_by(models.Transaction.transaction_date.desc()).all()
 
-# NOVA ROTA: Buscar uma transação (Resolve o 404 da Edição)
 @router.get("/transactions/{transaction_id}", response_model=finance_schema.TransactionResponse)
 def get_transaction(
     transaction_id: UUID,
@@ -100,7 +99,32 @@ def get_transaction(
         raise HTTPException(status_code=404, detail="Transação não encontrada")
     return transaction
 
-# NOVA ROTA: Excluir (Resolve o 404 do botão Excluir)
+# >>> ROTA ADICIONADA AQUI (RESOLVE O ERRO 405) <<<
+@router.put("/transactions/{transaction_id}", response_model=finance_schema.TransactionResponse)
+def update_transaction(
+    transaction_id: UUID,
+    trans_in: finance_schema.TransactionUpdate,
+    db: Session = Depends(deps.get_db),
+    current_farm: models.Farm = Depends(deps.get_current_farm)
+):
+    """Atualiza uma transação existente no banco de dados."""
+    transaction = db.query(models.Transaction).filter(
+        models.Transaction.id == transaction_id,
+        models.Transaction.farm_id == current_farm.id
+    ).first()
+    
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transação não encontrada")
+    
+    # Atualiza apenas os campos enviados (ignora os que vierem nulos)
+    update_data = trans_in.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(transaction, key, value)
+    
+    db.commit()
+    db.refresh(transaction)
+    return transaction
+
 @router.delete("/transactions/{transaction_id}")
 def delete_transaction(
     transaction_id: UUID,
@@ -167,7 +191,6 @@ def get_financial_report_pdf(
     story = []
     styles = getSampleStyleSheet()
 
-    # CORREÇÃO AQUI: farm_name em vez de name
     farm_title = getattr(current_farm, 'farm_name', 'Minha Fazenda')
     story.append(Paragraph(f"Relatório Financeiro: {farm_title}", styles['Title']))
     story.append(Spacer(1, 12))
