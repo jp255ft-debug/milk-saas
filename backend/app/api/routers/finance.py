@@ -12,17 +12,33 @@ from app.schemas import finance as finance_schema
 router = APIRouter(tags=["financeiro"])
 
 
-# ========== CATEGORIAS ==========
+# ========== CATEGORIAS (Gestão e Organização) ==========
 
 @router.get("/categories", response_model=list[finance_schema.FinancialCategoryResponse])
 def get_categories(
     db: Session = Depends(deps.get_db),
     current_farm: models.Farm = Depends(deps.get_current_farm)
 ):
-    """Retorna todas as categorias da fazenda atual."""
+    """Retorna todas as categorias cadastradas para a sua fazenda."""
     return db.query(models.FinancialCategory).filter(
         models.FinancialCategory.farm_id == current_farm.id
     ).all()
+
+
+@router.delete("/categories/reset", summary="Limpar todas as categorias (Faxina)")
+def reset_categories(
+    db: Session = Depends(deps.get_db),
+    current_farm: models.Farm = Depends(deps.get_current_farm)
+):
+    """
+    CUIDADO: Apaga todas as categorias financeiras da sua fazenda. 
+    Útil para limpar duplicatas antes de rodar um novo Seed.
+    """
+    db.query(models.FinancialCategory).filter(
+        models.FinancialCategory.farm_id == current_farm.id
+    ).delete()
+    db.commit()
+    return {"message": "O terreno está limpo! Todas as categorias antigas foram removidas."}
 
 
 @router.post("/categories/seed", summary="Plantar categorias financeiras padrão")
@@ -32,7 +48,7 @@ def seed_default_categories(
 ):
     """
     Cadastra as categorias seguindo o modelo de gestão profissional:
-    Receita, Despesas Variáveis e Despesas Fixas.
+    RECEITA, DESPESA VARIÁVEL e DESPESA FIXA.
     """
     
     CATEGORIAS_PADRAO = [
@@ -61,7 +77,6 @@ def seed_default_categories(
 
     inseridas = 0
     for cat in CATEGORIAS_PADRAO:
-        # Verifica se a categoria já existe para evitar duplicatas
         existe = db.query(models.FinancialCategory).filter(
             models.FinancialCategory.farm_id == current_farm.id,
             models.FinancialCategory.name == cat["name"]
@@ -79,11 +94,11 @@ def seed_default_categories(
     db.commit()
     return {
         "status": "sucesso",
-        "message": f"{inseridas} categorias configuradas seguindo o modelo de gestão profissional."
+        "message": f"{inseridas} categorias profissionais plantadas com sucesso!"
     }
 
 
-# ========== TRANSAÇÕES ==========
+# ========== TRANSAÇÕES (Lançamentos Diários) ==========
 
 @router.post("/transactions", response_model=finance_schema.TransactionResponse)
 def create_transaction(
@@ -134,7 +149,7 @@ def get_transactions(
     return query.order_by(models.Transaction.transaction_date.desc()).all()
 
 
-# ========== RELATÓRIOS E PERFORMANCE ==========
+# ========== RESUMOS E PERFORMANCE (O Coração do Negócio) ==========
 
 @router.get("/summary")
 def get_financial_summary(
@@ -143,21 +158,19 @@ def get_financial_summary(
     db: Session = Depends(deps.get_db),
     current_farm: models.Farm = Depends(deps.get_current_farm)
 ):
-    """Gera o resumo mensal: Receita, Despesa e Saldo Líquido."""
+    """Gera o resumo mensal: Receita, Despesa e o Saldo Líquido (Lucro)."""
     start_date = date(year, month, 1)
     if month == 12:
         end_date = date(year + 1, 1, 1) - timedelta(days=1)
     else:
         end_date = date(year, month + 1, 1) - timedelta(days=1)
     
-    # Soma de Receitas
     revenues = db.query(func.sum(models.Transaction.amount)).join(models.FinancialCategory).filter(
         models.Transaction.farm_id == current_farm.id,
         models.Transaction.transaction_date.between(start_date, end_date),
         models.FinancialCategory.type == 'revenue'
     ).scalar() or 0
     
-    # Soma de Despesas (Fixas + Variáveis)
     expenses = db.query(func.sum(models.Transaction.amount)).join(models.FinancialCategory).filter(
         models.Transaction.farm_id == current_farm.id,
         models.Transaction.transaction_date.between(start_date, end_date),
@@ -165,10 +178,10 @@ def get_financial_summary(
     ).scalar() or 0
     
     return {
-        "period": f"{year}-{month:02d}",
-        "total_revenue": float(revenues),
-        "total_expenses": float(expenses),
-        "net_balance": float(revenues - expenses)
+        "periodo": f"{month:02d}/{year}",
+        "receitas": float(revenues),
+        "despesas": float(expenses),
+        "saldo_liquido": float(revenues - expenses)
     }
 
 
@@ -179,7 +192,7 @@ def get_financial_report_pdf(
     db: Session = Depends(deps.get_db),
     current_farm: models.Farm = Depends(deps.get_current_farm)
 ):
-    """Gera relatório em PDF para download."""
+    """Gera relatório em PDF profissional para análise de custos."""
     import io
     from fastapi.responses import StreamingResponse
     from reportlab.lib import colors
@@ -197,8 +210,10 @@ def get_financial_report_pdf(
     story = []
     styles = getSampleStyleSheet()
 
-    story.append(Paragraph(f"Relatório Financeiro - {current_farm.name}", styles['Title']))
+    story.append(Paragraph(f"Relatório Financeiro: {current_farm.name}", styles['Title']))
     story.append(Spacer(1, 12))
+    story.append(Paragraph(f"Período: {start_date.strftime('%d/%m/%Y')} a {end_date.strftime('%d/%m/%Y')}", styles['Normal']))
+    story.append(Spacer(1, 20))
 
     data = [["Data", "Categoria", "Descrição", "Valor"]]
     for t in transactions:
@@ -209,14 +224,20 @@ def get_financial_report_pdf(
             f"R$ {t.amount:.2f}"
         ])
 
-    table = Table(data)
+    table = Table(data, colWidths=[80, 150, 150, 80])
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey])
     ]))
+    
     story.append(table)
     doc.build(story)
     buffer.seek(0)
 
-    return StreamingResponse(buffer, media_type="application/pdf")
+    return StreamingResponse(buffer, media_type="application/pdf", headers={
+        "Content-Disposition": f"attachment; filename=relatorio_{start_date}.pdf"
+    })
