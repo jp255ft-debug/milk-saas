@@ -25,20 +25,27 @@ def get_categories(
     ).all()
 
 
-@router.delete("/categories/reset", summary="Limpar todas as categorias (Faxina)")
-def reset_categories(
+@router.delete("/categories/reset", summary="Limpar tudo (Faxina Total)")
+def reset_finance(
     db: Session = Depends(deps.get_db),
     current_farm: models.Farm = Depends(deps.get_current_farm)
 ):
     """
-    CUIDADO: Apaga todas as categorias financeiras da sua fazenda. 
-    Útil para limpar duplicatas antes de rodar um novo Seed.
+    CUIDADO: Apaga todas as TRANSAÇÕES e CATEGORIAS da sua fazenda. 
+    Limpamos os vínculos primeiro para evitar erros de integridade.
     """
+    # 1. Apaga as transações primeiro (para liberar o vínculo)
+    db.query(models.Transaction).filter(
+        models.Transaction.farm_id == current_farm.id
+    ).delete()
+
+    # 2. Agora sim, apaga as categorias
     db.query(models.FinancialCategory).filter(
         models.FinancialCategory.farm_id == current_farm.id
     ).delete()
+
     db.commit()
-    return {"message": "O terreno está limpo! Todas as categorias antigas foram removidas."}
+    return {"message": "Faxina concluída! Transações e categorias removidas. O terreno está pronto para o novo Seed."}
 
 
 @router.post("/categories/seed", summary="Plantar categorias financeiras padrão")
