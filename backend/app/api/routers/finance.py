@@ -11,32 +11,35 @@ from app.schemas import finance as finance_schema
 
 router = APIRouter(tags=["financeiro"])
 
-# ========== CATEGORIAS ==========
+# ========== CATEGORIAS (Organização) ==========
 
 @router.get("/categories", response_model=list[finance_schema.FinancialCategoryResponse])
 def get_categories(
     db: Session = Depends(deps.get_db),
     current_farm: models.Farm = Depends(deps.get_current_farm)
 ):
+    """Retorna as categorias financeiras da fazenda atual."""
     return db.query(models.FinancialCategory).filter(
         models.FinancialCategory.farm_id == current_farm.id
     ).all()
 
-@router.delete("/categories/reset")
+@router.delete("/categories/reset", summary="Limpar financeiro")
 def reset_finance(
     db: Session = Depends(deps.get_db),
     current_farm: models.Farm = Depends(deps.get_current_farm)
 ):
+    """Remove todas as transações e categorias da fazenda."""
     db.query(models.Transaction).filter(models.Transaction.farm_id == current_farm.id).delete()
     db.query(models.FinancialCategory).filter(models.FinancialCategory.farm_id == current_farm.id).delete()
     db.commit()
-    return {"message": "Faxina concluída!"}
+    return {"message": "Faxina concluída! Terreno limpo para novos lançamentos."}
 
 @router.post("/categories/seed")
 def seed_default_categories(
     db: Session = Depends(deps.get_db),
     current_farm: models.Farm = Depends(deps.get_current_farm)
 ):
+    """Planta as categorias financeiras padrão para o produtor."""
     CATEGORIAS_PADRAO = [
         {"name": "Venda de Leite In Natura", "type": "revenue"},
         {"name": "Venda de Animais", "type": "revenue"},
@@ -57,7 +60,7 @@ def seed_default_categories(
             db.add(nova)
             inseridas += 1
     db.commit()
-    return {"status": "sucesso", "message": f"{inseridas} categorias plantadas!"}
+    return {"status": "sucesso", "message": f"{inseridas} categorias plantadas com sucesso!"}
 
 # ========== TRANSAÇÕES (CRUD COMPLETO) ==========
 
@@ -67,6 +70,7 @@ def create_transaction(
     db: Session = Depends(deps.get_db),
     current_farm: models.Farm = Depends(deps.get_current_farm)
 ):
+    """Cria um novo lançamento financeiro."""
     transaction = models.Transaction(farm_id=current_farm.id, **trans_in.dict())
     db.add(transaction)
     db.commit()
@@ -80,9 +84,12 @@ def get_transactions(
     db: Session = Depends(deps.get_db),
     current_farm: models.Farm = Depends(deps.get_current_farm)
 ):
+    """Lista transações com filtros de data."""
     query = db.query(models.Transaction).filter(models.Transaction.farm_id == current_farm.id)
-    if start_date: query = query.filter(models.Transaction.transaction_date >= start_date)
-    if end_date: query = query.filter(models.Transaction.transaction_date <= end_date)
+    if start_date:
+        query = query.filter(models.Transaction.transaction_date >= start_date)
+    if end_date:
+        query = query.filter(models.Transaction.transaction_date <= end_date)
     return query.order_by(models.Transaction.transaction_date.desc()).all()
 
 @router.get("/transactions/{transaction_id}", response_model=finance_schema.TransactionResponse)
@@ -91,6 +98,7 @@ def get_transaction(
     db: Session = Depends(deps.get_db),
     current_farm: models.Farm = Depends(deps.get_current_farm)
 ):
+    """Busca uma transação específica pelo ID."""
     transaction = db.query(models.Transaction).filter(
         models.Transaction.id == transaction_id,
         models.Transaction.farm_id == current_farm.id
@@ -99,7 +107,6 @@ def get_transaction(
         raise HTTPException(status_code=404, detail="Transação não encontrada")
     return transaction
 
-# >>> ROTA ADICIONADA AQUI (RESOLVE O ERRO 405) <<<
 @router.put("/transactions/{transaction_id}", response_model=finance_schema.TransactionResponse)
 def update_transaction(
     transaction_id: UUID,
@@ -107,7 +114,7 @@ def update_transaction(
     db: Session = Depends(deps.get_db),
     current_farm: models.Farm = Depends(deps.get_current_farm)
 ):
-    """Atualiza uma transação existente no banco de dados."""
+    """Atualiza uma transação (Resolve Erro 405)."""
     transaction = db.query(models.Transaction).filter(
         models.Transaction.id == transaction_id,
         models.Transaction.farm_id == current_farm.id
@@ -116,7 +123,6 @@ def update_transaction(
     if not transaction:
         raise HTTPException(status_code=404, detail="Transação não encontrada")
     
-    # Atualiza apenas os campos enviados (ignora os que vierem nulos)
     update_data = trans_in.dict(exclude_unset=True)
     for key, value in update_data.items():
         setattr(transaction, key, value)
@@ -131,6 +137,7 @@ def delete_transaction(
     db: Session = Depends(deps.get_db),
     current_farm: models.Farm = Depends(deps.get_current_farm)
 ):
+    """Remove uma transação do banco de dados."""
     transaction = db.query(models.Transaction).filter(
         models.Transaction.id == transaction_id,
         models.Transaction.farm_id == current_farm.id
@@ -141,7 +148,7 @@ def delete_transaction(
     db.commit()
     return {"message": "Transação removida com sucesso"}
 
-# ========== RESUMO E PDF ==========
+# ========== RESUMO E PERFORMANCE ==========
 
 @router.get("/summary")
 def get_financial_summary(
@@ -150,8 +157,12 @@ def get_financial_summary(
     db: Session = Depends(deps.get_db),
     current_farm: models.Farm = Depends(deps.get_current_farm)
 ):
+    """Calcula o lucro líquido mensal da fazenda."""
     start = date(year, month, 1)
-    end = (date(year + (1 if month == 12 else 0), (month % 12) + 1, 1) - timedelta(days=1))
+    if month == 12:
+        end = date(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        end = date(year, month + 1, 1) - timedelta(days=1)
     
     rev = db.query(func.sum(models.Transaction.amount)).join(models.FinancialCategory).filter(
         models.Transaction.farm_id == current_farm.id,
@@ -172,8 +183,10 @@ def get_financial_report_pdf(
     start_date: date = Query(...),
     end_date: date = Query(...),
     db: Session = Depends(deps.get_db),
-    current_farm: models.Farm = Depends(deps.get_current_farm)
+    # TRAVA PRO: Somente fazendas com plano pago podem gerar PDFs
+    current_farm: models.Farm = Depends(deps.check_pro_plan)
 ):
+    """Gera relatório PDF profissional (Recurso Exclusivo Plano PRO)."""
     import io
     from fastapi.responses import StreamingResponse
     from reportlab.lib import colors
@@ -191,18 +204,32 @@ def get_financial_report_pdf(
     story = []
     styles = getSampleStyleSheet()
 
+    # farm_name é o atributo correto para o título do relatório
     farm_title = getattr(current_farm, 'farm_name', 'Minha Fazenda')
     story.append(Paragraph(f"Relatório Financeiro: {farm_title}", styles['Title']))
     story.append(Spacer(1, 12))
     
     data = [["Data", "Categoria", "Descrição", "Valor"]]
     for t in transactions:
-        data.append([t.transaction_date.strftime("%d/%m/%Y"), t.category.name, t.description or "-", f"R$ {t.amount:.2f}"])
+        data.append([
+            t.transaction_date.strftime("%d/%m/%Y"), 
+            t.category.name, 
+            t.description or "-", 
+            f"R$ {t.amount:.2f}"
+        ])
 
     table = Table(data, colWidths=[80, 150, 150, 80])
-    table.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.darkblue), ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke), ('GRID', (0, 0), (-1, -1), 1, colors.black)]))
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
     
     story.append(table)
     doc.build(story)
     buffer.seek(0)
-    return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=relatorio.pdf"})
+    
+    return StreamingResponse(buffer, media_type="application/pdf", headers={
+        "Content-Disposition": f"attachment; filename=relatorio_financeiro.pdf"
+    })

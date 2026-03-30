@@ -2,12 +2,10 @@
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy.orm import Session
-
 from app import models
 from app.core import security
 from app.database import SessionLocal
 
-# === CORREÇÃO: Apontando para a rota de login correta ===
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 def get_db():
@@ -24,18 +22,16 @@ async def get_current_farm(
 ) -> models.Farm:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail="Credenciais inválidas",
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    # Tenta obter token do cookie primeiro
+    # Prioridade para o Cookie (comum no frontend Next.js)
     token_from_cookie = request.cookies.get("access_token")
     if token_from_cookie:
-        if token_from_cookie.startswith("Bearer "):
-            token = token_from_cookie.replace("Bearer ", "")
-        else:
-            token = token_from_cookie
-    elif token is None:
+        token = token_from_cookie.replace("Bearer ", "") if token_from_cookie.startswith("Bearer ") else token_from_cookie
+    
+    if token is None:
         raise credentials_exception
     
     try:
@@ -44,10 +40,18 @@ async def get_current_farm(
         if farm_id is None:
             raise credentials_exception
     except JWTError:
-        raise credentials_exception from None  # ← corrigido
+        raise credentials_exception
     
     farm = db.query(models.Farm).filter(models.Farm.id == farm_id).first()
     if farm is None:
         raise credentials_exception
-    
     return farm
+
+# NOVO: Validador de Plano PRO
+def check_pro_plan(current_farm: models.Farm = Depends(get_current_farm)):
+    if current_farm.plan_type != "pro":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Funcionalidade disponível apenas no Plano PRO."
+        )
+    return current_farm
