@@ -3,33 +3,45 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import Image from 'next/image'; // 1. Importamos o componente de imagem
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false); // Novo estado para o botão
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(''); // Limpa o erro anterior ao tentar de novo
-    setIsSubmitting(true); // Bloqueia o botão
+    setError('');
+    setIsSubmitting(true);
     
     try {
       await login(email, password);
     } catch (err: any) {
-      // Como o AuthContext agora lança um Error padrão, nós lemos o "message"
       setError(err.message || 'Erro ao fazer login. Verifique suas credenciais.');
-      setIsSubmitting(false); // Libera o botão se der erro
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-6 bg-gray-50">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8 border">
-        <h1 className="text-2xl font-bold text-center text-blue-600 mb-6">Milk SaaS</h1>
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">Login</h2>
+        
+        {/* 2. Substituímos o h1 pela Logo centralizada */}
+        <div className="flex justify-center mb-8">
+          <Image 
+            src="/logo-leite.png" 
+            alt="Logo Programa Leite Forte Cedro"
+            width={200} 
+            height={200}
+            priority
+            className="rounded-xl drop-shadow-sm"
+          />
+        </div>
+
+        <h2 className="text-xl font-semibold mb-4 text-gray-800 text-center">Login</h2>
         
         {error && (
           <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded mb-4 text-sm">
