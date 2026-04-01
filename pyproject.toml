@@ -1,5 +1,16 @@
-﻿[tool.ruff.lint]
+﻿[project]
+name = "milk-saas"
+version = "0.1.0"
+description = "SaaS para gestão de pecuária leiteira em Cedro"
+authors = [
+    {name = "João Paulo Lima"}
+]
+
+[tool.ruff]
 line-length = 100
+
+[tool.ruff.lint]
+# Seleciona regras de erro (E), Pyflakes (F), Isort (I), Upgrade (UP), Bugbear (B) e Comprehensions (C4)
 select = ["E", "F", "I", "UP", "B", "C4"]
 ignore = ["B008"]
 
