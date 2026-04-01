@@ -111,6 +111,18 @@ def finance_report(start_date: str, end_date: str):
 def get_animals(db: Session = Depends(get_db)):
     return db.query(models.Animal).all()
 
+# ---------- ROTA RAIZ (já existente) ----------
 @app.get("/")
 def root():
     return {"status": "Online", "database": "Conectado ao PostgreSQL"}
+
+# ---------- NOVAS ROTAS PARA MONITORAMENTO ----------
+# Rota HEAD para compatibilidade com monitores (ex.: UptimeRobot)
+@app.head("/")
+def head_root():
+    return Response(status_code=200)
+
+# Rota de saúde (opcional, mais leve que a raiz)
+@app.get("/health")
+def health():
+    return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
