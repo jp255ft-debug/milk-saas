@@ -178,6 +178,48 @@ def get_financial_summary(
     
     return {"receitas": float(rev), "despesas": float(exp), "saldo_liquido": float(rev - exp)}
 
+# ========== CUSTO POR LITRO ==========
+
+@router.get("/cost-per-liter")
+def get_cost_per_liter(
+    start_date: date = Query(...),
+    end_date: date = Query(...),
+    db: Session = Depends(deps.get_db),
+    current_farm: models.Farm = Depends(deps.get_current_farm)
+):
+    """
+    Calcula o custo por litro de leite no período.
+    Considera despesas variáveis e fixas e a produção total de leite.
+    """
+    # 1. Soma das despesas (variable_cost + fixed_cost) no período
+    despesas = db.query(func.sum(models.Transaction.amount)).join(models.FinancialCategory).filter(
+        models.Transaction.farm_id == current_farm.id,
+        models.Transaction.transaction_date.between(start_date, end_date),
+        models.FinancialCategory.type.in_(['variable_cost', 'fixed_cost'])
+    ).scalar() or 0
+
+    # 2. Soma da produção de leite no período (usando a tabela MilkProduction)
+    producao = db.query(func.sum(models.MilkProduction.liters_produced)).join(models.Animal).filter(
+        models.Animal.farm_id == current_farm.id,
+        models.MilkProduction.production_date.between(start_date, end_date)
+    ).scalar() or 0
+
+    custo_por_litro = despesas / producao if producao > 0 else 0
+
+    return {
+        "period_start": start_date,
+        "period_end": end_date,
+        "total_expenses": float(despesas),
+        "total_liters": float(producao),
+        "cost_per_liter": float(custo_por_litro),
+        "details": {
+            "despesas_variáveis": float(despesas),
+            "produção_litros": float(producao)
+        }
+    }
+
+# ========== RELATÓRIO PDF ==========
+
 @router.get("/report/pdf")
 def get_financial_report_pdf(
     start_date: date = Query(...),
