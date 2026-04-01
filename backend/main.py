@@ -14,7 +14,7 @@ models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Milk SaaS - Produção Real")
 
-# 1. CORS - Configuração Específica para Produção (Resolve o erro de Wildcard)
+# 1. CORS - Configuração Específica para Produção
 origins = [
     "https://milk-saas.vercel.app",
     "https://milk-saas-emvf0mekk-joao-paulo-limas-projects.vercel.app",
