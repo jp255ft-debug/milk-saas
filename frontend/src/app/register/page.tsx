@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import Image from 'next/image'; // importa o componente de imagem
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -24,7 +25,6 @@ export default function RegisterPage() {
     e.preventDefault();
     try {
       await register(formData);
-      // Redirecionamento já feito dentro do register, mas mantemos como fallback
       router.push('/login?registered=true');
     } catch (err: any) {
       setError(err.message || 'Erro ao registrar');
@@ -34,13 +34,26 @@ export default function RegisterPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-6 bg-gray-50">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8 border">
-        <h1 className="text-2xl font-bold text-center text-blue-600 mb-6">Milk SaaS</h1>
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">Criar conta</h2>
+        {/* Logo no lugar do título "Milk SaaS" */}
+        <div className="flex justify-center mb-8">
+          <Image
+            src="/logo-leite.png"
+            alt="Logo Programa Leite Forte Cedro"
+            width={200}
+            height={200}
+            priority
+            className="rounded-xl drop-shadow-sm"
+          />
+        </div>
+
+        <h2 className="text-xl font-semibold mb-4 text-gray-800 text-center">Criar conta</h2>
+
         {error && (
           <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded mb-4 text-sm">
             {error}
           </div>
         )}
+
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-sm font-medium mb-1 text-gray-700">Nome do proprietário</label>
@@ -94,6 +107,7 @@ export default function RegisterPage() {
             Registrar
           </button>
         </form>
+
         <p className="text-center text-sm mt-6 text-gray-600">
           Já tem uma conta?{' '}
           <Link href="/login" className="text-blue-600 hover:underline font-medium">
