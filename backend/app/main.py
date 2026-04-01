@@ -31,11 +31,17 @@ async def global_exception_handler(request: Request, exc: Exception):
         content=error_detail
     )
 
-# 3. CONFIGURAÇÃO DE CORS
+# 3. CONFIGURAÇÃO DE CORS (CORRIGIDA PARA PERMITIR COOKIES)
+origins = [
+    "https://milk-saas.vercel.app",                                         # produção
+    "https://milk-saas-git-main-joao-paulo-limas-projects.vercel.app",    # preview (se houver)
+    "http://localhost:3000",                                                # desenvolvimento local
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Liberação total para evitar Network Error
-    allow_credentials=True,
+    allow_origins=origins,          # lista específica (não "*")
+    allow_credentials=True,         # necessário para cookies
     allow_methods=["*"],
     allow_headers=["*"],
 )
