@@ -15,10 +15,19 @@ interface CostResult {
   details: Record<string, number>;
 }
 
+// Função auxiliar para formatar data ISO (YYYY-MM-DD) para DD/MM/YYYY
+const formatDate = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const [year, month, day] = dateStr.split('-');
+  return `${day}/${month}/${year}`;
+};
+
 export default function CostPerLiterPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
+  );
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [result, setResult] = useState<CostResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -91,7 +100,10 @@ export default function CostPerLiterPage() {
       {result && (
         <div className="bg-white p-6 rounded shadow">
           <h2 className="text-xl font-semibold mb-4">Resultado</h2>
-          <p><strong>Período:</strong> {new Date(result.period_start).toLocaleDateString()} a {new Date(result.period_end).toLocaleDateString()}</p>
+          {/* Formatação manual das datas */}
+          <p>
+            <strong>Período:</strong> {formatDate(result.period_start)} a {formatDate(result.period_end)}
+          </p>
           <p><strong>Total de litros:</strong> {result.total_liters.toFixed(2)} L</p>
           <p><strong>Total de despesas:</strong> {formatCurrency(result.total_expenses)}</p>
           <p className="text-2xl font-bold mt-2">
@@ -113,4 +125,3 @@ export default function CostPerLiterPage() {
     </div>
   );
 }
-
