@@ -59,8 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Como estamos usando Cookies Seguros (HttpOnly), não precisamos ler o localStorage.
-  // Basta perguntar ao backend quem somos sempre que a página carrega ou a rota muda.
+  // Busca usuário sempre que a rota mudar (mantém estado sincronizado)
   useEffect(() => {
     fetchUser();
   }, [pathname]);
@@ -68,22 +67,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     validatePasswordLength(password);
     try {
-      // 1. O FastAPI exige envio via Formulário (URLSearchParams)
-      // 2. O campo deve obrigatoriamente se chamar "username"
       const formData = new URLSearchParams();
       formData.append('username', email);
       formData.append('password', password);
 
-      // Dispara o login
       await api.post('/auth/login', formData, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
-      
-      // Se passou, o backend já salvou o Cookie de acesso no navegador.
-      // Agora buscamos os dados do usuário para preencher a tela.
-      await fetchUser();
-      
-      // Redireciona para o painel
+
+      // Cookie já definido; redireciona para o dashboard
+      // O fetchUser será executado quando o dashboard carregar (via useEffect)
       router.push('/dashboard');
     } catch (err: any) {
       throw new Error(extractErrorMessage(err));
@@ -93,9 +86,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (data: RegisterData) => {
     validatePasswordLength(data.password);
     try {
-      // Registro continua sendo JSON normal
       await api.post('/auth/register', data);
-      await login(data.email, data.password);
+      // Registro concluído; redireciona para login sem tentar logar automaticamente
+      router.push('/login?registered=true');
     } catch (err: any) {
       throw new Error(extractErrorMessage(err));
     }
@@ -103,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await api.post('/auth/logout'); // O backend apaga o cookie
+      await api.post('/auth/logout');
     } catch (err) {
       console.error('Erro no logout', err);
     } finally {
