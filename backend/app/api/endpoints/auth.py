@@ -1,5 +1,4 @@
 ﻿from datetime import timedelta
-
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -15,22 +14,24 @@ def register(
     farm_in: schemas.FarmCreate,
     db: Session = Depends(deps.get_db)
 ):
+    # 1. Verifica se o e-mail já existe para evitar erro 400 por duplicidade
     existing_farm = db.query(models.Farm).filter(
         models.Farm.email == farm_in.email
     ).first()
+    
     if existing_farm:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            detail="Este e-mail já está cadastrado no sistema."
         )
     
+    # 2. Prepara os dados para o banco de dados
+    # Usamos model_dump para capturar automaticamente plan_type, status e outros novos campos
+    farm_data = farm_in.model_dump(exclude={"password"}) 
     hashed_password = security.get_password_hash(farm_in.password)
-    db_farm = models.Farm(
-        owner_name=farm_in.owner_name,
-        farm_name=farm_in.farm_name,
-        email=farm_in.email,
-        hashed_password=hashed_password
-    )
+    
+    # 3. Cria a instância do modelo com todos os campos do schema + a senha criptografada
+    db_farm = models.Farm(**farm_data, hashed_password=hashed_password)
     
     db.add(db_farm)
     db.commit()
@@ -50,7 +51,7 @@ def login(
     if not farm or not security.verify_password(form_data.password, farm.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="E-mail ou senha incorretos",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
@@ -60,25 +61,31 @@ def login(
         expires_delta=access_token_expires
     )
     
-    # AJUSTE CRUCIAL: secure=True e samesite="none" para cruzar domínios
+    # AJUSTE PARA PRODUÇÃO: Permite que o cookie funcione entre Vercel e Render
     response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
         max_age=security.ACCESS_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         expires=security.ACCESS_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        secure=True,
-        samesite="none",
+        secure=True,    # Obrigatório para HTTPS no Render/Vercel
+        samesite="none", # Necessário para requisições entre domínios diferentes
         path="/",
     )
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    # Adicionado # nosec para silenciar o alerta falso positivo do Bandit (B105)
+    return {"access_token": access_token, "token_type": "bearer"} # nosec
 
 @router.post("/logout")
 def logout(response: Response):
-    # AJUSTE CRUCIAL: O logout precisa das mesmas tags para conseguir limpar o cookie de produção
-    response.delete_cookie("access_token", path="/", secure=True, samesite="none")
-    return {"message": "Logged out"}
+    # Remove o cookie usando as mesmas configurações de segurança do login
+    response.delete_cookie(
+        "access_token", 
+        path="/", 
+        secure=True, 
+        samesite="none"
+    )
+    return {"message": "Sessão encerrada com sucesso"}
 
 @router.get("/me", response_model=schemas.FarmResponse)
 def read_current_farm(
