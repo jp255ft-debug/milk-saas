@@ -49,8 +49,10 @@ class MilkProduction(Base):
     animal_id = Column(UUID(as_uuid=True), ForeignKey("animals.id", ondelete="CASCADE"), nullable=False)
     production_date = Column(Date, nullable=False, server_default=func.current_date())
     liters_produced = Column(Numeric(10, 2), nullable=False)
-    period = Column(String) 
-    
+    period = Column(String)
+    fat_content = Column(Numeric(5, 2), default=0)          # ← ADICIONADO
+    protein_content = Column(Numeric(5, 2), default=0)      # ← ADICIONADO
+
     __table_args__ = (CheckConstraint(period.in_(['morning', 'afternoon', 'night']), name='check_period'),)
     animal = relationship("Animal", back_populates="milk_productions")
 
