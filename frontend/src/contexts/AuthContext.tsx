@@ -71,11 +71,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       formData.append('username', email);
       formData.append('password', password);
 
-      await api.post('/auth/login', formData, {
+      const response = await api.post('/auth/login', formData, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
 
-      // Aguarda o fetchUser para garantir que o cookie já está sendo usado
+      const token = response.data.access_token;
+      localStorage.setItem('token', token); // Armazena token
+
+      // O interceptor já adicionará o token nas próximas requisições
       await fetchUser();
 
       router.push('/dashboard');
@@ -88,7 +91,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     validatePasswordLength(data.password);
     try {
       await api.post('/auth/register', data);
-      // Registro concluído; redireciona para login sem tentar logar automaticamente
       router.push('/login?registered=true');
     } catch (err: any) {
       throw new Error(extractErrorMessage(err));
@@ -101,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('Erro no logout', err);
     } finally {
+      localStorage.removeItem('token'); // Remove token
       setUser(null);
       router.push('/login');
     }
