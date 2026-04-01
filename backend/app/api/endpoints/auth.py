@@ -14,23 +14,20 @@ def register(
     farm_in: schemas.FarmCreate,
     db: Session = Depends(deps.get_db)
 ):
-    # 1. Verifica se o e-mail já existe para evitar erro 400 por duplicidade
+    # Verifica se o e-mail já existe (Evita erro 400 genérico)
     existing_farm = db.query(models.Farm).filter(
         models.Farm.email == farm_in.email
     ).first()
-    
     if existing_farm:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Este e-mail já está cadastrado no sistema."
+            detail="Este e-mail já está cadastrado."
         )
     
-    # 2. Prepara os dados para o banco de dados
-    # Usamos model_dump para capturar automaticamente plan_type, status e outros novos campos
-    farm_data = farm_in.model_dump(exclude={"password"}) 
+    # model_dump garante que plan_type="free" seja incluído automaticamente
+    farm_data = farm_in.model_dump(exclude={"password"})
     hashed_password = security.get_password_hash(farm_in.password)
     
-    # 3. Cria a instância do modelo com todos os campos do schema + a senha criptografada
     db_farm = models.Farm(**farm_data, hashed_password=hashed_password)
     
     db.add(db_farm)
@@ -61,31 +58,26 @@ def login(
         expires_delta=access_token_expires
     )
     
-    # AJUSTE PARA PRODUÇÃO: Permite que o cookie funcione entre Vercel e Render
+    # Configuração de Cookie para Produção (Vercel + Render)
     response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
         max_age=security.ACCESS_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         expires=security.ACCESS_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        secure=True,    # Obrigatório para HTTPS no Render/Vercel
-        samesite="none", # Necessário para requisições entre domínios diferentes
+        secure=True,     # Exige HTTPS
+        samesite="none",  # Permite envio entre domínios diferentes
         path="/",
     )
     
-    # Adicionado # nosec para silenciar o alerta falso positivo do Bandit (B105)
+    # # nosec silencia o falso positivo do auditor Bandit
     return {"access_token": access_token, "token_type": "bearer"} # nosec
 
 @router.post("/logout")
 def logout(response: Response):
-    # Remove o cookie usando as mesmas configurações de segurança do login
-    response.delete_cookie(
-        "access_token", 
-        path="/", 
-        secure=True, 
-        samesite="none"
-    )
-    return {"message": "Sessão encerrada com sucesso"}
+    # Remove o cookie usando as mesmas tags de segurança
+    response.delete_cookie("access_token", path="/", secure=True, samesite="none")
+    return {"message": "Sessão encerrada"}
 
 @router.get("/me", response_model=schemas.FarmResponse)
 def read_current_farm(
