@@ -1,11 +1,9 @@
 from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
-
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-
-# ---------- Farm (existente) ----------
+# ---------- Farm (Corrigido para SaaS) ----------
 class FarmBase(BaseModel):
     owner_name: str
     farm_name: str
@@ -13,10 +11,18 @@ class FarmBase(BaseModel):
 
 class FarmCreate(FarmBase):
     password: str = Field(..., min_length=6)
+    # Valores padrão garantem que o registro funcione mesmo sem o frontend enviar
+    plan_type: str = "free"
+    subscription_status: str = "active"
+    stripe_customer_id: str | None = None
+    stripe_subscription_id: str | None = None
 
 class FarmResponse(FarmBase):
     id: UUID
     created_at: datetime
+    plan_type: str
+    subscription_status: str
+    stripe_customer_id: str | None = None
     model_config = ConfigDict(from_attributes=True)
 
 # ---------- Token ----------
