@@ -15,7 +15,6 @@ models.Base.metadata.create_all(bind=database.engine)
 app = FastAPI(title="Milk SaaS - Produção Real")
 
 # 1. CORS - Configuração Específica para Produção (Resolve o erro de Wildcard)
-# Adicionei sua URL da Vercel e o localhost para testes
 origins = [
     "https://milk-saas.vercel.app",
     "https://milk-saas-emvf0mekk-joao-paulo-limas-projects.vercel.app",
@@ -91,7 +90,6 @@ def get_summary(year: int, month: int, db: Session = Depends(get_db)):
     }
 
 # ---------- RELATÓRIO PDF ----------
-
 @app.get("/finance/report/pdf")
 def finance_report(start_date: str, end_date: str):
     try:
@@ -111,18 +109,12 @@ def finance_report(start_date: str, end_date: str):
 def get_animals(db: Session = Depends(get_db)):
     return db.query(models.Animal).all()
 
-# ---------- ROTA RAIZ (já existente) ----------
-@app.get("/")
+# ---------- ROTA RAIZ (unificada para GET e HEAD) ----------
+@app.api_route("/", methods=["GET", "HEAD"])
 def root():
     return {"status": "Online", "database": "Conectado ao PostgreSQL"}
 
-# ---------- NOVAS ROTAS PARA MONITORAMENTO ----------
-# Rota HEAD para compatibilidade com monitores (ex.: UptimeRobot)
-@app.head("/")
-def head_root():
-    return Response(status_code=200)
-
-# Rota de saúde (opcional, mais leve que a raiz)
+# ---------- ROTA DE SAÚDE (opcional) ----------
 @app.get("/health")
 def health():
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
