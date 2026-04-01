@@ -75,8 +75,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
 
-      // Cookie já definido; redireciona para o dashboard
-      // O fetchUser será executado quando o dashboard carregar (via useEffect)
+      // Aguarda o fetchUser para garantir que o cookie já está sendo usado
+      await fetchUser();
+
       router.push('/dashboard');
     } catch (err: any) {
       throw new Error(extractErrorMessage(err));
