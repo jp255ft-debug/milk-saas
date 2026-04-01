@@ -34,7 +34,8 @@ class Animal(Base):
     breed = Column(String)
     birth_date = Column(Date)
     status = Column(String, nullable=False)
-    
+    last_calving_date = Column(Date, nullable=True)   # ← CAMPO ADICIONADO
+
     __table_args__ = (
         CheckConstraint(status.in_(['lactation', 'dry', 'heifer', 'calf']), name='check_animal_status'),
         UniqueConstraint('farm_id', 'tag_id', name='uq_farm_animal_tag')
